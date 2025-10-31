@@ -418,3 +418,41 @@ code {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Toast notification animations */
+#toastNotification {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+#toastNotification.hiding {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    #toastNotification {
+        top: 80px;
+        right: 1rem;
+        left: 1rem;
+    }
+}
