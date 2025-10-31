@@ -78,6 +78,62 @@ async function fileToBase64(file) {
 }
 
 // ============================================
+// CONTEXT SUMMARIZATION
+// ============================================
+
+async function summarizeOldMessages(messages) {
+    if (messages.length === 0) return null;
+    
+    const conversationText = messages.map((msg, idx) => 
+        `${msg.isUser ? 'User' : 'AI'}: ${msg.content}`
+    ).join('\n\n');
+    
+    const summaryPrompt = `Tóm tắt ngắn gọn cuộc trò chuyện sau (3-5 câu, giữ lại ý chính và context quan trọng):
+
+${conversationText}
+
+Tóm tắt:`;
+
+    try {
+        showToast('🧠 AI đang tóm tắt ngữ cảnh cũ...', 2000);
+        
+        const response = await fetch(
+            `${BASE_URL}/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: summaryPrompt }] }],
+                    generationConfig: {
+                        temperature: 0.3,
+                        maxOutputTokens: 500
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            console.error('Summary failed, skipping...');
+            showToast('⚠️ Tóm tắt thất bại, tiếp tục chat bình thường', 2000);
+            return null;
+        }
+
+        const data = await response.json();
+        const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (summary) {
+            showToast('✅ Đã tóm tắt ngữ cảnh thành công!', 2000);
+        }
+        
+        return summary ? `[Tóm tắt cuộc trò chuyện trước]: ${summary}` : null;
+    } catch (error) {
+        console.error('Summarization error:', error);
+        showToast('❌ Lỗi khi tóm tắt', 2000);
+        return null;
+    }
+}
+
+// ============================================
 // GEMINI API FUNCTIONS
 // ============================================
 
@@ -95,7 +151,38 @@ async function sendToGeminiStreaming(userMessage, files = []) {
         });
     }
     
-    const recentHistory = conversationHistory.slice(-20);
+    // Smart context management with cached summarization
+    let recentHistory;
+    let summaryMessage = null;
+
+    if (conversationHistory.length > 50) {
+        const summaryKey = `summary_${currentConversationId}`;
+        let cachedSummary = localStorage.getItem(summaryKey);
+        
+        if (!cachedSummary) {
+            const oldCount = conversationHistory.length - 20;
+            const oldMessages = conversationHistory.slice(0, oldCount);
+            
+            summaryMessage = await summarizeOldMessages(oldMessages);
+            if (summaryMessage) {
+                localStorage.setItem(summaryKey, summaryMessage);
+            }
+        } else {
+            summaryMessage = cachedSummary;
+        }
+        
+        recentHistory = conversationHistory.slice(-20);
+    } else {
+        recentHistory = conversationHistory;
+    }
+
+    // Add summary silently
+    if (summaryMessage) {
+        contents.push({
+            role: "user",
+            parts: [{ text: summaryMessage }]
+        });
+    }
     
     for (const msg of recentHistory) {
         const parts = [{ text: msg.content }];
@@ -214,6 +301,22 @@ async function* streamResponse(response) {
 // ============================================
 // UI FUNCTIONS
 // ============================================
+
+function showToast(message, duration = 3000) {
+    const toast = document.getElementById('toastNotification');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.classList.remove('hidden', 'hiding');
+    
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+            toast.classList.remove('hiding');
+        }, 300);
+    }, duration);
+}
 
 function showRateLimitModal() {
     const rateLimitModal = document.getElementById('rateLimitModal');
@@ -540,6 +643,9 @@ function newChat() {
     conversationHistory = [];
     currentConversationId = generateId();
     attachedFiles = [];
+    
+    // Clear summary cache for new conversation
+    localStorage.removeItem(`summary_${currentConversationId}`);
     
     const filePreviewArea = document.getElementById('filePreviewArea');
     filePreviewArea.innerHTML = '';
@@ -923,5 +1029,5 @@ document.addEventListener('DOMContentLoaded', () => {
     updateModelDisplay();
     messageInput.focus();
     
-    console.log('🚀 AI Chat Agent initialized!');
+    console.log('🚀 AI Chat Agent initialized with smart context summarization!');
 });
