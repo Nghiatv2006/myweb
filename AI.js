@@ -13,8 +13,9 @@ let conversationHistory = [];
 let currentConversationId = generateId();
 let allConversations = loadConversationsFromStorage();
 let isWaitingForResponse = false;
-let selectedModel = 'gemini-2.5-flash';
+let selectedModel = loadSelectedModel();
 let attachedFiles = [];
+let systemPrompt = loadSystemPrompt();
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -42,6 +43,24 @@ function loadApiKey() {
     return localStorage.getItem('gemini_api_key') || '';
 }
 
+function loadSelectedModel() {
+    return localStorage.getItem('selected_model') || 'gemini-2.0-flash-exp';
+}
+
+function saveSelectedModel(model) {
+    localStorage.setItem('selected_model', model);
+    selectedModel = model;
+}
+
+function loadSystemPrompt() {
+    return localStorage.getItem('system_prompt') || '';
+}
+
+function saveSystemPrompt(prompt) {
+    localStorage.setItem('system_prompt', prompt);
+    systemPrompt = prompt;
+}
+
 // ============================================
 // FILE HANDLING FUNCTIONS
 // ============================================
@@ -63,11 +82,48 @@ async function fileToBase64(file) {
 // ============================================
 
 async function sendToGeminiStreaming(userMessage, files = []) {
-    const parts = [{ text: userMessage }];
+    const contents = [];
+    
+    if (systemPrompt.trim()) {
+        contents.push({
+            role: "user",
+            parts: [{ text: `System: ${systemPrompt}` }]
+        });
+        contents.push({
+            role: "model",
+            parts: [{ text: "Understood. I will follow these instructions." }]
+        });
+    }
+    
+    const recentHistory = conversationHistory.slice(-20);
+    
+    for (const msg of recentHistory) {
+        const parts = [{ text: msg.content }];
+        
+        if (msg.files && msg.files.length > 0) {
+            for (const fileData of msg.files) {
+                if (fileData.base64 && fileData.mimeType) {
+                    parts.push({
+                        inline_data: {
+                            mime_type: fileData.mimeType,
+                            data: fileData.base64
+                        }
+                    });
+                }
+            }
+        }
+        
+        contents.push({
+            role: msg.isUser ? "user" : "model",
+            parts: parts
+        });
+    }
+    
+    const currentParts = [{ text: userMessage }];
     
     for (const file of files) {
         const base64Data = await fileToBase64(file);
-        parts.push({
+        currentParts.push({
             inline_data: {
                 mime_type: file.type,
                 data: base64Data
@@ -75,8 +131,13 @@ async function sendToGeminiStreaming(userMessage, files = []) {
         });
     }
     
+    contents.push({
+        role: "user",
+        parts: currentParts
+    });
+    
     const payload = {
-        contents: [{ parts }],
+        contents: contents,
         generationConfig: {
             temperature: 0.9,
             topK: 40,
@@ -116,32 +177,37 @@ async function* streamResponse(response) {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
 
-        for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') continue;
-                
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed.candidates && parsed.candidates[0]) {
-                        const content = parsed.candidates[0].content;
-                        if (content && content.parts && content.parts[0]) {
-                            yield content.parts[0].text || '';
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') continue;
+                    
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.candidates && parsed.candidates[0]) {
+                            const content = parsed.candidates[0].content;
+                            if (content && content.parts && content.parts[0]) {
+                                yield content.parts[0].text || '';
+                            }
                         }
+                    } catch (e) {
+                        console.error('Parse error:', e);
                     }
-                } catch (e) {
-                    console.error('Parse error:', e);
                 }
             }
         }
+    } catch (error) {
+        console.error('Stream error:', error);
+        throw error;
     }
 }
 
@@ -268,10 +334,14 @@ function addMessage(content, isUser = false, isStreaming = false, files = []) {
                 imagesDiv.className = 'user-message-images';
                 
                 files.forEach(file => {
-                    if (file.type.startsWith('image/')) {
+                    if (file.type && file.type.startsWith('image/')) {
                         const img = document.createElement('img');
-                        img.src = URL.createObjectURL(file);
-                        img.alt = file.name;
+                        if (file instanceof File) {
+                            img.src = URL.createObjectURL(file);
+                        } else if (file.base64 && file.mimeType) {
+                            img.src = `data:${file.mimeType};base64,${file.base64}`;
+                        }
+                        img.alt = file.name || 'Image';
                         img.onclick = () => window.open(img.src, '_blank');
                         imagesDiv.appendChild(img);
                     }
@@ -496,8 +566,23 @@ async function handleSendMessage() {
     const files = [...attachedFiles];
     const messageText = message || '[Đã gửi file]';
     
+    const filesData = [];
+    for (const file of files) {
+        const base64 = await fileToBase64(file);
+        filesData.push({
+            name: file.name,
+            type: file.type,
+            mimeType: file.type,
+            base64: base64
+        });
+    }
+    
     addMessage(messageText, true, false, files);
-    conversationHistory.push({ content: messageText, isUser: true, files: files });
+    conversationHistory.push({ 
+        content: messageText, 
+        isUser: true, 
+        files: filesData 
+    });
     
     messageInput.value = '';
     messageInput.style.height = 'auto';
@@ -540,11 +625,10 @@ async function handleSendMessage() {
 }
 
 // ============================================
-// INITIALIZATION - ALL EVENT LISTENERS HERE
+// INITIALIZATION
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Get DOM elements
     const chatMessages = document.getElementById('chatMessages');
     const messageInput = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -558,7 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('apiKeyInput');
     const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
     const changeApiKeyBtn = document.getElementById('changeApiKeyBtn');
-    const modelSelector = document.getElementById('modelSelector');
     const fileInput = document.getElementById('fileInput');
     const attachFileBtn = document.getElementById('attachFileBtn');
     const filePreviewArea = document.getElementById('filePreviewArea');
@@ -566,7 +649,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     
-    // Load API key
+    const systemPromptBtn = document.getElementById('systemPromptBtn');
+    const systemPromptModal = document.getElementById('systemPromptModal');
+    const systemPromptInput = document.getElementById('systemPromptInput');
+    const saveSystemPromptBtn = document.getElementById('saveSystemPromptBtn');
+    const closeSystemPromptBtn = document.getElementById('closeSystemPromptBtn');
+    
+    const modelSelectorBtn = document.getElementById('modelSelectorBtn');
+    const modelSelectorModal = document.getElementById('modelSelectorModal');
+    const closeModelSelectorBtn = document.getElementById('closeModelSelectorBtn');
+    const currentModelIcon = document.getElementById('currentModelIcon');
+    const currentModelName = document.getElementById('currentModelName');
+    const modelOptions = document.querySelectorAll('.model-option');
+    
     const savedApiKey = loadApiKey();
     if (savedApiKey) {
         GEMINI_API_KEY = savedApiKey;
@@ -575,7 +670,35 @@ document.addEventListener('DOMContentLoaded', () => {
         apiKeyModal.classList.remove('hidden');
     }
     
-    // File handling functions
+    systemPromptInput.value = systemPrompt;
+    
+    const modelIcons = {
+        'gemini-2.0-flash-exp': '⚡',
+        'gemini-exp-1206': '🚀',
+        'gemini-2.5-flash': '💨',
+        'gemini-2.5-pro': '💎'
+    };
+
+    const modelNames = {
+        'gemini-2.0-flash-exp': 'Flash 2.0',
+        'gemini-exp-1206': 'Exp 1206',
+        'gemini-2.5-flash': 'Flash 2.5',
+        'gemini-2.5-pro': 'Pro 2.5'
+    };
+
+    function updateModelDisplay() {
+        currentModelIcon.textContent = modelIcons[selectedModel] || '⚡';
+        currentModelName.textContent = modelNames[selectedModel] || 'Flash 2.0';
+        
+        modelOptions.forEach(option => {
+            if (option.dataset.model === selectedModel) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+    }
+    
     function handleFileSelect(event) {
         const files = Array.from(event.target.files);
         files.forEach(file => {
@@ -627,7 +750,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Scroll management
     function updateScrollButton() {
         const scrollTop = chatMessages.scrollTop;
         const scrollHeight = chatMessages.scrollHeight;
@@ -640,8 +762,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // ========== EVENT LISTENERS ==========
-    
     sendBtn.addEventListener('click', handleSendMessage);
 
     messageInput.addEventListener('keydown', (e) => {
@@ -653,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     messageInput.addEventListener('input', function() {
         this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 300) + 'px';
+        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
     });
 
     newChatBtn.addEventListener('click', newChat);
@@ -675,7 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Close sidebar button - Event Delegation (FIX for GitHub Pages)
     document.body.addEventListener('click', (e) => {
         if (e.target.id === 'closeSidebarBtn' || e.target.closest('#closeSidebarBtn')) {
             sidebar.classList.add('closed');
@@ -712,8 +831,50 @@ document.addEventListener('DOMContentLoaded', () => {
         apiKeyInput.focus();
     });
 
-    modelSelector.addEventListener('change', (e) => {
-        selectedModel = e.target.value;
+    systemPromptBtn.addEventListener('click', () => {
+        systemPromptModal.classList.remove('hidden');
+        systemPromptInput.focus();
+    });
+
+    saveSystemPromptBtn.addEventListener('click', () => {
+        const prompt = systemPromptInput.value.trim();
+        saveSystemPrompt(prompt);
+        systemPromptModal.classList.add('hidden');
+        alert('System prompt đã được lưu! Áp dụng cho cuộc trò chuyện mới.');
+    });
+
+    closeSystemPromptBtn.addEventListener('click', () => {
+        systemPromptModal.classList.add('hidden');
+    });
+
+    systemPromptModal.addEventListener('click', (e) => {
+        if (e.target === systemPromptModal) {
+            systemPromptModal.classList.add('hidden');
+        }
+    });
+
+    modelSelectorBtn.addEventListener('click', () => {
+        modelSelectorModal.classList.remove('hidden');
+        updateModelDisplay();
+    });
+
+    closeModelSelectorBtn.addEventListener('click', () => {
+        modelSelectorModal.classList.add('hidden');
+    });
+
+    modelSelectorModal.addEventListener('click', (e) => {
+        if (e.target === modelSelectorModal) {
+            modelSelectorModal.classList.add('hidden');
+        }
+    });
+
+    modelOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            const model = option.dataset.model;
+            saveSelectedModel(model);
+            updateModelDisplay();
+            modelSelectorModal.classList.add('hidden');
+        });
     });
 
     attachFileBtn.addEventListener('click', () => {
@@ -728,7 +889,6 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();
     });
 
-    // Drag and drop
     document.addEventListener('dragover', (e) => {
         e.preventDefault();
         dropOverlay.classList.remove('hidden');
@@ -759,12 +919,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    
-    // ========== END EVENT LISTENERS ==========
-    
     updateConversationHistory();
+    updateModelDisplay();
     messageInput.focus();
     
-    console.log('🚀 AI Chat Agent initialized successfully!');
+    console.log('🚀 AI Chat Agent initialized!');
 });
-
