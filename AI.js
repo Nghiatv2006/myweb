@@ -44,7 +44,7 @@ function loadApiKey() {
 }
 
 function loadSelectedModel() {
-    return localStorage.getItem('selected_model') || 'gemini-2.0-flash-exp';
+    return localStorage.getItem('selected_model') || 'gemini-2.5-flash-lite';
 }
 
 function saveSelectedModel(model) {
@@ -95,7 +95,7 @@ ${conversationText}
 Tóm tắt:`;
 
     try {
-        showToast('🧠 AI đang tóm tắt ngữ cảnh cũ...', 2000);
+        showToast('🧠 AI đang tóm tắt ngữ cảnh cũ...', 'info', 2000);
         
         const response = await fetch(
             `${BASE_URL}/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`,
@@ -114,7 +114,7 @@ Tóm tắt:`;
 
         if (!response.ok) {
             console.error('Summary failed, skipping...');
-            showToast('⚠️ Tóm tắt thất bại, tiếp tục chat bình thường', 2000);
+            showToast('⚠️ Tóm tắt thất bại, tiếp tục chat bình thường', 'warning', 2000);
             return null;
         }
 
@@ -122,13 +122,13 @@ Tóm tắt:`;
         const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (summary) {
-            showToast('✅ Đã tóm tắt ngữ cảnh thành công!', 2000);
+            showToast('✅ Đã tóm tắt ngữ cảnh thành công!', 'success', 2000);
         }
         
         return summary ? `[Tóm tắt cuộc trò chuyện trước]: ${summary}` : null;
     } catch (error) {
         console.error('Summarization error:', error);
-        showToast('❌ Lỗi khi tóm tắt', 2000);
+        showToast('❌ Lỗi khi tóm tắt', 'error', 2000);
         return null;
     }
 }
@@ -302,11 +302,38 @@ async function* streamResponse(response) {
 // UI FUNCTIONS
 // ============================================
 
-function showToast(message, duration = 3000) {
+function showToast(message, type = 'info', duration = 3000) {
     const toast = document.getElementById('toastNotification');
     const toastMessage = document.getElementById('toastMessage');
+    const toastIcon = toast.querySelector('.toast-icon');
     
+    // Set message
     toastMessage.textContent = message;
+    
+    // Set icon and color based on type
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    
+    const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-yellow-500',
+        info: 'bg-accent'
+    };
+    
+    if (toastIcon) {
+        toastIcon.textContent = icons[type] || icons.info;
+    }
+    
+    // Update toast background color
+    toast.classList.remove('bg-accent', 'bg-green-500', 'bg-red-500', 'bg-yellow-500');
+    toast.classList.add(colors[type] || colors.info);
+    
+    // Show toast
     toast.classList.remove('hidden', 'hiding');
     
     setTimeout(() => {
@@ -369,9 +396,12 @@ function copyToClipboard(text, button) {
     navigator.clipboard.writeText(text).then(() => {
         const originalText = button.innerHTML;
         button.innerHTML = '✓ Đã sao chép!';
+        showToast('✅ Đã sao chép vào clipboard', 'success', 2000);
         setTimeout(() => {
             button.innerHTML = originalText;
         }, 2000);
+    }).catch(() => {
+        showToast('❌ Lỗi khi sao chép', 'error');
     });
 }
 
@@ -485,16 +515,44 @@ function addMessage(content, isUser = false, isStreaming = false, files = []) {
         messageDiv.appendChild(contentDiv);
         
         if (!isUser) {
+            const actionBtns = document.createElement('div');
+            actionBtns.className = 'flex items-center gap-2 mt-3';
+            
+            const regenerateBtn = document.createElement('button');
+            regenerateBtn.className = 'px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1';
+            regenerateBtn.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Tạo lại
+            `;
+            regenerateBtn.onclick = () => regenerateResponse(messageDiv);
+            actionBtns.appendChild(regenerateBtn);
+            
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'mt-3 px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary';
+            copyBtn.className = 'px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1';
             copyBtn.innerHTML = `
-                <svg class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
                 Sao chép
             `;
             copyBtn.onclick = () => copyToClipboard(content, copyBtn);
-            messageDiv.appendChild(copyBtn);
+            actionBtns.appendChild(copyBtn);
+            
+            messageDiv.appendChild(actionBtns);
+        } else {
+            // Edit button for user messages
+            const editBtn = document.createElement('button');
+            editBtn.className = 'mt-3 px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1';
+            editBtn.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Chỉnh sửa
+            `;
+            editBtn.onclick = () => editMessage(messageDiv, content, files);
+            messageDiv.appendChild(editBtn);
         }
         
         const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
@@ -512,18 +570,293 @@ function finalizeStreamingMessage() {
         const content = document.getElementById('streamingContent');
         if (content) {
             content.id = '';
+            const actionBtns = document.createElement('div');
+            actionBtns.className = 'flex items-center gap-2 mt-3';
+            
+            const regenerateBtn = document.createElement('button');
+            regenerateBtn.className = 'px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1';
+            regenerateBtn.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Tạo lại
+            `;
+            regenerateBtn.onclick = () => regenerateResponse(streamingMsg);
+            actionBtns.appendChild(regenerateBtn);
+            
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'mt-3 px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary';
+            copyBtn.className = 'px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1';
             copyBtn.innerHTML = `
-                <svg class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
                 Sao chép
             `;
             copyBtn.onclick = () => copyToClipboard(content.textContent, copyBtn);
-            streamingMsg.appendChild(copyBtn);
+            actionBtns.appendChild(copyBtn);
+            
+            streamingMsg.appendChild(actionBtns);
         }
     }
+}
+
+async function regenerateResponse(messageElement) {
+    const aiContent = messageElement.querySelector('.prose')?.textContent || '';
+    
+    if (!aiContent) {
+        showToast('⚠️ Không tìm thấy nội dung câu trả lời', 'warning');
+        return;
+    }
+    
+    const historyIndex = conversationHistory.findIndex(msg => 
+        !msg.isUser && msg.content.trim() === aiContent.trim()
+    );
+    
+    if (historyIndex === -1 || historyIndex === 0) {
+        showToast('⚠️ Không tìm thấy tin nhắn người dùng để tạo lại', 'warning');
+        return;
+    }
+    
+    const userMessage = conversationHistory[historyIndex - 1];
+    if (!userMessage || !userMessage.isUser) {
+        showToast('⚠️ Không tìm thấy tin nhắn người dùng để tạo lại', 'warning');
+        return;
+    }
+    
+    conversationHistory.splice(historyIndex, 1);
+    
+    const chatMessages = document.getElementById('chatMessages');
+    const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
+    const allMessages = Array.from(container.querySelectorAll('.message'));
+    const currentIndex = allMessages.indexOf(messageElement);
+    
+    if (currentIndex !== -1) {
+        for (let i = currentIndex; i < allMessages.length; i++) {
+            allMessages[i].remove();
+        }
+    } else {
+        messageElement.remove();
+    }
+    
+    const streamingMsg = document.getElementById('streamingMessage');
+    if (streamingMsg) streamingMsg.remove();
+    const typingIndicator = document.getElementById('typingIndicator');
+    if (typingIndicator) typingIndicator.remove();
+    
+    showToast('🔄 Đang tạo lại câu trả lời...', 'info');
+    
+    isWaitingForResponse = true;
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+    
+    try {
+        const files = userMessage.files || [];
+        const response = await sendToGeminiStreaming(userMessage.content, []);
+        removeTypingIndicator();
+        
+        let fullResponse = '';
+        for await (const chunk of streamResponse(response)) {
+            fullResponse += chunk;
+            addMessage(fullResponse, false, true);
+        }
+        
+        finalizeStreamingMessage();
+        conversationHistory.push({ content: fullResponse, isUser: false });
+        saveCurrentConversation();
+        showToast('✅ Đã tạo lại câu trả lời thành công', 'success', 2000);
+    } catch (error) {
+        removeTypingIndicator();
+        showToast('❌ Lỗi khi tạo lại câu trả lời', 'error');
+    } finally {
+        isWaitingForResponse = false;
+        sendBtn.disabled = false;
+    }
+}
+
+function editMessage(messageElement, originalContent, originalFiles) {
+    const contentDiv = messageElement.querySelector('.prose');
+    if (!contentDiv) return;
+    
+    const editTextarea = document.createElement('textarea');
+    editTextarea.className = 'w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle text-sm';
+    editTextarea.rows = Math.max(3, Math.ceil(originalContent.length / 50));
+    editTextarea.value = originalContent;
+    
+    contentDiv.innerHTML = '';
+    contentDiv.appendChild(editTextarea);
+    editTextarea.focus();
+    editTextarea.select();
+    
+    const editBtns = document.createElement('div');
+    editBtns.className = 'flex items-center gap-2 mt-3';
+    
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'px-4 py-2 text-sm rounded-lg transition-all bg-accent text-white hover:opacity-90';
+    saveBtn.textContent = 'Lưu và gửi lại';
+    saveBtn.onclick = async () => {
+        const newContent = editTextarea.value.trim();
+        if (!newContent) {
+            showToast('⚠️ Nội dung không được để trống', 'warning');
+            return;
+        }
+        
+        // Remove edit buttons immediately
+        editBtns.remove();
+        
+        if (originalFiles && originalFiles.length > 0) {
+            const escapedContent = newContent
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
+            
+            const imagesDiv = document.createElement('div');
+            imagesDiv.className = 'user-message-images';
+            originalFiles.forEach(file => {
+                if (file.type && file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    if (file.base64 && file.mimeType) {
+                        img.src = `data:${file.mimeType};base64,${file.base64}`;
+                    }
+                    img.alt = file.name || 'Image';
+                    img.onclick = () => window.open(img.src, '_blank');
+                    imagesDiv.appendChild(img);
+                }
+            });
+            contentDiv.appendChild(imagesDiv);
+        } else {
+            const escapedContent = newContent
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
+        }
+        
+        // Restore edit button
+        const editBtn = document.createElement('button');
+        editBtn.className = 'mt-3 px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1';
+        editBtn.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Chỉnh sửa
+        `;
+        editBtn.onclick = () => editMessage(messageElement, newContent, originalFiles);
+        messageElement.appendChild(editBtn);
+        
+        const messageIndex = conversationHistory.findIndex((msg, idx) => 
+            msg.isUser && msg.content === originalContent
+        );
+        if (messageIndex !== -1) {
+            conversationHistory.splice(messageIndex + 1);
+            conversationHistory[messageIndex].content = newContent;
+        }
+        
+        const chatMessages = document.getElementById('chatMessages');
+        const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
+        const allMessages = Array.from(container.querySelectorAll('.message'));
+        const currentIndex = allMessages.indexOf(messageElement);
+        if (currentIndex !== -1) {
+            for (let i = currentIndex + 1; i < allMessages.length; i++) {
+                allMessages[i].remove();
+            }
+        }
+        
+        showToast('✅ Đã cập nhật tin nhắn. Đang gửi lại...', 'success');
+        
+        isWaitingForResponse = true;
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.disabled = true;
+        
+        try {
+            const files = originalFiles || [];
+            const response = await sendToGeminiStreaming(newContent, files);
+            removeTypingIndicator();
+            
+            let fullResponse = '';
+            for await (const chunk of streamResponse(response)) {
+                fullResponse += chunk;
+                addMessage(fullResponse, false, true);
+            }
+            
+            finalizeStreamingMessage();
+            conversationHistory.push({ content: fullResponse, isUser: false });
+            saveCurrentConversation();
+            showToast('✅ Đã gửi lại thành công', 'success', 2000);
+        } catch (error) {
+            removeTypingIndicator();
+            showToast('❌ Lỗi khi gửi lại', 'error');
+        } finally {
+            isWaitingForResponse = false;
+            sendBtn.disabled = false;
+        }
+    };
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'px-4 py-2 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80';
+    cancelBtn.textContent = 'Hủy';
+    cancelBtn.onclick = () => {
+        // Remove edit buttons immediately
+        editBtns.remove();
+        
+        // Restore original content
+        if (originalFiles && originalFiles.length > 0) {
+            const escapedContent = originalContent
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
+            
+            const imagesDiv = document.createElement('div');
+            imagesDiv.className = 'user-message-images';
+            originalFiles.forEach(file => {
+                if (file.type && file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    if (file.base64 && file.mimeType) {
+                        img.src = `data:${file.mimeType};base64,${file.base64}`;
+                    }
+                    img.alt = file.name || 'Image';
+                    img.onclick = () => window.open(img.src, '_blank');
+                    imagesDiv.appendChild(img);
+                }
+            });
+            contentDiv.appendChild(imagesDiv);
+        } else {
+            const escapedContent = originalContent
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
+        }
+        
+        // Restore edit button
+        const editBtn = document.createElement('button');
+        editBtn.className = 'mt-3 px-3 py-1 text-sm rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1';
+        editBtn.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Chỉnh sửa
+        `;
+        editBtn.onclick = () => editMessage(messageElement, originalContent, originalFiles);
+        messageElement.appendChild(editBtn);
+    };
+    
+    editBtns.appendChild(saveBtn);
+    editBtns.appendChild(cancelBtn);
+    
+    const oldEditBtn = messageElement.querySelector('button');
+    if (oldEditBtn) oldEditBtn.remove();
+    
+    messageElement.appendChild(editBtns);
 }
 
 function addTypingIndicator() {
@@ -573,6 +906,72 @@ function clearChatDisplay() {
     }
 }
 
+function exportConversation(id) {
+    const conv = allConversations.find(c => c.id === id);
+    if (!conv) {
+        showToast('⚠️ Không tìm thấy cuộc trò chuyện', 'warning');
+        return;
+    }
+    
+    const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        conversation: conv
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat_${conv.id.substring(0, 8)}_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('✅ Đã export cuộc trò chuyện thành công', 'success');
+}
+
+function importConversation(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            const importedConv = data.conversation || data;
+            
+            if (!importedConv.id || !importedConv.messages || !Array.isArray(importedConv.messages)) {
+                showToast('❌ File JSON không hợp lệ', 'error');
+                return;
+            }
+            
+            // Generate new ID to avoid conflicts
+            const newId = generateId();
+            const conversation = {
+                id: newId,
+                messages: importedConv.messages,
+                timestamp: importedConv.timestamp || Date.now()
+            };
+            
+            allConversations.push(conversation);
+            saveConversationsToStorage();
+            updateConversationHistory();
+            
+            showToast('✅ Đã import cuộc trò chuyện thành công', 'success');
+            
+            // Optionally load the imported conversation
+            setTimeout(() => {
+                if (confirm('Bạn có muốn mở cuộc trò chuyện vừa import không?')) {
+                    loadConversation(newId);
+                }
+            }, 500);
+        } catch (error) {
+            console.error('Import error:', error);
+            showToast('❌ Lỗi khi import file JSON', 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
 function updateConversationHistory() {
     const conversationHistoryEl = document.getElementById('conversationHistory');
     conversationHistoryEl.innerHTML = '';
@@ -587,14 +986,25 @@ function updateConversationHistory() {
         
         item.innerHTML = `
             <span class="text-sm truncate flex-1">${title}</span>
-            <button class="delete-conv opacity-0 group-hover:opacity-100 transition-opacity p-1" data-id="${conv.id}">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
+            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="export-conv p-1 hover:bg-user-msg rounded" data-id="${conv.id}" title="Export">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </button>
+                <button class="delete-conv p-1 hover:bg-user-msg rounded" data-id="${conv.id}" title="Xóa">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
         `;
         
         item.querySelector('span').onclick = () => loadConversation(conv.id);
+        item.querySelector('.export-conv').onclick = (e) => {
+            e.stopPropagation();
+            exportConversation(conv.id);
+        };
         item.querySelector('.delete-conv').onclick = (e) => {
             e.stopPropagation();
             deleteConversation(conv.id);
@@ -627,7 +1037,10 @@ function saveCurrentConversation() {
 
 function loadConversation(id) {
     const conv = allConversations.find(c => c.id === id);
-    if (!conv) return;
+    if (!conv) {
+        showToast('⚠️ Không tìm thấy cuộc trò chuyện', 'warning');
+        return;
+    }
     
     currentConversationId = id;
     conversationHistory = [...conv.messages];
@@ -637,6 +1050,7 @@ function loadConversation(id) {
     conversationHistory.forEach(msg => {
         addMessage(msg.content, msg.isUser, false, msg.files);
     });
+    showToast('✅ Đã tải cuộc trò chuyện', 'success', 2000);
 }
 
 function deleteConversation(id) {
@@ -647,6 +1061,7 @@ function deleteConversation(id) {
     if (currentConversationId === id) {
         newChat();
     }
+    showToast('✅ Đã xóa cuộc trò chuyện', 'success', 2000);
 }
 
 function newChat() {
@@ -727,11 +1142,13 @@ async function handleSendMessage() {
         finalizeStreamingMessage();
         conversationHistory.push({ content: fullResponse, isUser: false });
         saveCurrentConversation();
+        showToast('✅ Tin nhắn đã được gửi thành công', 'success', 2000);
         
     } catch (error) {
         removeTypingIndicator();
         if (error.message !== 'Rate limit exceeded') {
             addMessage('Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.', false);
+            showToast('❌ Đã xảy ra lỗi khi gửi tin nhắn', 'error');
         }
     } finally {
         isWaitingForResponse = false;
@@ -765,11 +1182,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     
-    const systemPromptBtn = document.getElementById('systemPromptBtn');
-    const systemPromptModal = document.getElementById('systemPromptModal');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
     const systemPromptInput = document.getElementById('systemPromptInput');
     const saveSystemPromptBtn = document.getElementById('saveSystemPromptBtn');
-    const closeSystemPromptBtn = document.getElementById('closeSystemPromptBtn');
+    const importChatBtn = document.getElementById('importChatBtn');
+    const importChatInput = document.getElementById('importChatInput');
     
     const modelSelectorBtn = document.getElementById('modelSelectorBtn');
     const modelSelectorModal = document.getElementById('modelSelectorModal');
@@ -789,42 +1208,51 @@ document.addEventListener('DOMContentLoaded', () => {
     systemPromptInput.value = systemPrompt;
     
     const modelIcons = {
-        'gemini-2.0-flash-exp': '⚡',
-        'gemini-exp-1206': '🚀',
+        'gemini-2.5-flash-lite': '⚡',
         'gemini-2.5-flash': '💨',
+        'gemini-2.0-flash-exp': '🚀',
+        'gemini-2.0-flash-lite': '⚡',
         'gemini-2.5-pro': '💎'
     };
 
     const modelNames = {
-        'gemini-2.0-flash-exp': 'Flash 2.0',
-        'gemini-exp-1206': 'Exp 1206',
+        'gemini-2.5-flash-lite': 'Flash Lite 2.5',
         'gemini-2.5-flash': 'Flash 2.5',
+        'gemini-2.0-flash-exp': 'Flash Exp 2.0',
+        'gemini-2.0-flash-lite': 'Flash Lite 2.0',
         'gemini-2.5-pro': 'Pro 2.5'
     };
 
     function updateModelDisplay() {
         currentModelIcon.textContent = modelIcons[selectedModel] || '⚡';
-        currentModelName.textContent = modelNames[selectedModel] || 'Flash 2.0';
+        currentModelName.textContent = modelNames[selectedModel] || 'Flash Lite 2.5';
         
         modelOptions.forEach(option => {
             if (option.dataset.model === selectedModel) {
                 option.classList.add('selected');
+                option.querySelector('.model-check')?.classList.remove('hidden');
             } else {
                 option.classList.remove('selected');
+                option.querySelector('.model-check')?.classList.add('hidden');
             }
         });
     }
     
     function handleFileSelect(event) {
         const files = Array.from(event.target.files);
+        let addedCount = 0;
         files.forEach(file => {
             if (file.size > 20 * 1024 * 1024) {
-                alert(`File ${file.name} quá lớn. Giới hạn 20MB.`);
+                showToast(`⚠️ File ${file.name} quá lớn. Giới hạn 20MB.`, 'warning');
                 return;
             }
             attachedFiles.push(file);
+            addedCount++;
         });
-        updateFilePreview();
+        if (addedCount > 0) {
+            updateFilePreview();
+            showToast(`✅ Đã đính kèm ${addedCount} file`, 'success');
+        }
     }
     
     function updateFilePreview() {
@@ -859,6 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             removeBtn.onclick = () => {
                 attachedFiles.splice(index, 1);
                 updateFilePreview();
+                showToast('✅ Đã xóa file đính kèm', 'success', 2000);
             };
             
             preview.appendChild(removeBtn);
@@ -902,7 +1331,10 @@ document.addEventListener('DOMContentLoaded', () => {
         this.style.height = Math.min(this.scrollHeight, 200) + 'px';
     });
 
-    newChatBtn.addEventListener('click', newChat);
+    newChatBtn.addEventListener('click', () => {
+        newChat();
+        showToast('✅ Đã tạo cuộc trò chuyện mới', 'success');
+    });
 
     clearAllBtn.addEventListener('click', () => {
         if (confirm('Bạn có chắc muốn xóa tất cả lịch sử trò chuyện?')) {
@@ -910,6 +1342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveConversationsToStorage();
             updateConversationHistory();
             newChat();
+            showToast('✅ Đã xóa tất cả lịch sử trò chuyện', 'success');
         }
     });
 
@@ -945,37 +1378,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const key = apiKeyInput.value.trim();
         if (key) {
             saveApiKey(key);
-            apiKeyModal.classList.add('hidden');
+            showToast('✅ API key đã được lưu thành công!', 'success');
         } else {
-            alert('Vui lòng nhập API key hợp lệ');
+            showToast('⚠️ Vui lòng nhập API key hợp lệ', 'warning');
         }
     });
 
-    changeApiKeyBtn.addEventListener('click', () => {
-        apiKeyModal.classList.remove('hidden');
-        apiKeyInput.value = '';
-        apiKeyInput.focus();
+    // Settings Modal handlers
+    settingsBtn.addEventListener('click', () => {
+        settingsModal.classList.remove('hidden');
+        systemPromptInput.value = systemPrompt;
     });
 
-    systemPromptBtn.addEventListener('click', () => {
-        systemPromptModal.classList.remove('hidden');
-        systemPromptInput.focus();
+    closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+    });
+
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            settingsModal.classList.add('hidden');
+        }
     });
 
     saveSystemPromptBtn.addEventListener('click', () => {
         const prompt = systemPromptInput.value.trim();
         saveSystemPrompt(prompt);
-        systemPromptModal.classList.add('hidden');
-        alert('System prompt đã được lưu! Áp dụng cho cuộc trò chuyện mới.');
+        showToast('✅ System prompt đã được lưu! Áp dụng cho cuộc trò chuyện mới.', 'success');
     });
 
-    closeSystemPromptBtn.addEventListener('click', () => {
-        systemPromptModal.classList.add('hidden');
+    importChatBtn.addEventListener('click', () => {
+        importChatInput.click();
     });
 
-    systemPromptModal.addEventListener('click', (e) => {
-        if (e.target === systemPromptModal) {
-            systemPromptModal.classList.add('hidden');
+    importChatInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importConversation(file);
+            e.target.value = ''; // Reset input
         }
     });
 
@@ -1000,6 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveSelectedModel(model);
             updateModelDisplay();
             modelSelectorModal.classList.add('hidden');
+            showToast(`✅ Đã chuyển sang ${modelNames[model]}`, 'success');
         });
     });
 
@@ -1026,17 +1466,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.addEventListener('drop', async (e) => {
+        document.addEventListener('drop', async (e) => {
         e.preventDefault();
         dropOverlay.classList.add('hidden');
         
         const files = Array.from(e.dataTransfer.files);
+        let addedCount = 0;
         files.forEach(file => {
             if (file.size <= 20 * 1024 * 1024) {
                 attachedFiles.push(file);
+                addedCount++;
+            } else {
+                showToast(`⚠️ File ${file.name} quá lớn. Giới hạn 20MB.`, 'warning');
             }
         });
-        updateFilePreview();
+        if (addedCount > 0) {
+            updateFilePreview();
+            showToast(`✅ Đã đính kèm ${addedCount} file`, 'success');
+        }
     });
 
     window.addEventListener('resize', () => {
