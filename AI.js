@@ -882,17 +882,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            // Desktop: Enter = send, Shift+Enter = new line
-            // Mobile: Enter = new line (use send button to send)
-            const isMobile = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            // Check if this is from a physical keyboard (desktop) or virtual keyboard (mobile)
+            // Mobile virtual keyboard typically has e.which = 13 but comes from touch device
+            const isPhysicalKeyboard = !('ontouchstart' in window) && (navigator.maxTouchPoints === 0);
             
-            if (!isMobile && !e.shiftKey) {
+            // Only intercept Enter on physical keyboards
+            if (isPhysicalKeyboard && !e.shiftKey) {
                 e.preventDefault();
                 handleSendMessage();
             }
-            // On mobile or Shift+Enter: do nothing, let textarea handle new line
+            // On mobile virtual keyboard: do nothing, let it create new line
         }
     });
+    
     
 
     messageInput.addEventListener('input', function() {
