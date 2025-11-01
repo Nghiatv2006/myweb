@@ -400,7 +400,18 @@ code {
         background-color: var(--bg-primary) !important;
         padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
         border-top: 1px solid var(--border-color) !important;
-        z-index: 50 !important;
+        z-index: 45 !important; /* Đủ cao để trên chat messages, nhưng thấp hơn modal */
+    }
+    
+    /* Settings modal fix for mobile */
+    .settings-modal {
+        z-index: 60 !important; /* Cao hơn input area để che khi mở */
+    }
+    
+    .settings-modal-content {
+        margin-bottom: 80px !important;
+        padding-bottom: 80px !important;
+        max-height: calc(90vh - 80px) !important;
     }
     
     .main-content {
