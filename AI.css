@@ -46,15 +46,31 @@ body {
     width: 280px;
     height: 100vh;
     transition: transform 0.3s ease;
-    overflow-y: auto;
     border-right: 1px solid var(--border-color);
     background-color: var(--bg-sidebar);
     z-index: 100;
     transform: translateX(0);
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar.closed {
     transform: translateX(-100%);
+}
+
+.sidebar-header {
+    background-color: var(--bg-sidebar);
+    flex-shrink: 0;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.bg-sidebar {
+    background-color: var(--bg-sidebar);
 }
 
 .sidebar button svg,
