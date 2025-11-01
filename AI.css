@@ -456,3 +456,14 @@ code {
         left: 1rem;
     }
 }
+
+/* Ensure line breaks display properly */
+.prose br {
+    display: block;
+    margin: 0.25em 0;
+}
+
+.user-message .prose {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
