@@ -430,7 +430,17 @@ function addMessage(content, isUser = false, isStreaming = false, files = []) {
         contentDiv.className = 'prose max-w-none';
         
         if (isUser) {
-            contentDiv.textContent = content;
+            // Preserve line breaks - escape HTML first for security
+            const escapedContent = content
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            
+            contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
+        
+        
             
             if (files && files.length > 0) {
                 const imagesDiv = document.createElement('div');
@@ -871,11 +881,19 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', handleSendMessage);
 
     messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
+        if (e.key === 'Enter') {
+            // Desktop: Enter = send, Shift+Enter = new line
+            // Mobile: Enter = new line (use send button to send)
+            const isMobile = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            
+            if (!isMobile && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+            // On mobile or Shift+Enter: do nothing, let textarea handle new line
         }
     });
+    
 
     messageInput.addEventListener('input', function() {
         this.style.height = 'auto';
