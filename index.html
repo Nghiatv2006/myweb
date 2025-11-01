@@ -60,8 +60,8 @@
     </div>
 
     <!-- Settings Modal -->
-    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-        <div class="rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl bg-primary max-h-[90vh] overflow-y-auto">
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 settings-modal">
+        <div class="rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl bg-primary max-h-[90vh] overflow-y-auto settings-modal-content">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-primary">⚙️ Cài Đặt</h2>
                 <button id="closeSettingsBtn" class="p-2 rounded-lg hover:bg-user-msg transition">
@@ -147,7 +147,7 @@
                     <input 
                         type="file" 
                         id="importChatInput" 
-                        accept=".json"
+                        accept=".json,application/json"
                         class="hidden"
                     />
                     
@@ -295,7 +295,7 @@
                     </div>
                     
                     <div class="flex gap-2 items-end">
-                        <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.doc,.docx" multiple class="hidden">
+                        <input type="file" id="fileInput" accept="*/*" multiple class="hidden">
                         <button id="attachFileBtn" class="input-button p-3 rounded-xl transition-all duration-200 bg-user-msg text-primary hover:bg-opacity-80 flex-shrink-0">
                             <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
@@ -362,6 +362,9 @@
             <p class="text-xs text-secondary mb-2">
                 <strong class="text-primary">RPD (Requests Per Day)</strong> là số lượng yêu cầu bạn có thể thực hiện mỗi ngày với mô hình tương ứng. Giới hạn này được Google đặt ra dựa trên API key miễn phí.
             </p>
+            <p class="text-xs text-secondary mb-2">
+                <strong class="text-primary">TPM (Tokens Per Minute)</strong> là giới hạn tốc độ xử lý token mỗi phút. Giới hạn này áp dụng cho tổng số token được xử lý trong tất cả các request trong 1 phút.
+            </p>
         </div>
         
         <div class="space-y-3">
@@ -376,8 +379,8 @@
                         </div>
                         <p class="text-sm text-secondary mb-2">Nhanh nhất trong dòng Gemini 2.5, tối ưu cho hiệu quả chi phí và thông lượng cao. Phù hợp cho dịch thuật, phân loại và các tác vụ yêu cầu xử lý khối lượng lớn với độ trễ thấp.</p>
                         <div class="flex items-center gap-3 text-xs">
-                            <span class="text-accent font-semibold">✓ 1.000 RPD (Requests Per Day)</span>
-                            <span class="text-secondary">• 1M tokens đầu vào • 65K tokens đầu ra</span>
+                            <span class="text-accent font-semibold">✓ 1.000 RPD</span>
+                            <span class="text-secondary">• 250K TPM</span>
                         </div>
                     </div>
                     <div class="model-check hidden">
@@ -398,8 +401,8 @@
                         </div>
                         <p class="text-sm text-secondary mb-2">Mô hình mạnh mẽ, phù hợp cho các tác vụ yêu cầu xử lý nhanh với khối lượng lớn. Tốt cho chat hàng ngày, học tập, code đơn giản đến trung bình.</p>
                         <div class="flex items-center gap-3 text-xs">
-                            <span class="text-secondary font-semibold">250 RPD (Requests Per Day)</span>
-                            <span class="text-secondary">• 1M tokens đầu vào • 65K tokens đầu ra</span>
+                            <span class="text-secondary font-semibold">250 RPD</span>
+                            <span class="text-secondary">• 250K TPM</span>
                         </div>
                     </div>
                     <div class="model-check hidden">
@@ -421,8 +424,8 @@
                         </div>
                         <p class="text-sm text-secondary mb-2">Phiên bản thử nghiệm của Gemini 2.0 Flash, kết hợp tốc độ với khả năng suy luận qua các vấn đề phức tạp. Phù hợp cho coding nâng cao và research.</p>
                         <div class="flex items-center gap-3 text-xs">
-                            <span class="text-yellow-500 font-semibold">⚠ 50 RPD (Requests Per Day)</span>
-                            <span class="text-secondary">• 1M tokens đầu vào • 65K tokens đầu ra</span>
+                            <span class="text-yellow-500 font-semibold">⚠ 50 RPD</span>
+                            <span class="text-secondary">• 250K TPM</span>
                         </div>
                     </div>
                     <div class="model-check hidden">
@@ -443,8 +446,8 @@
                         </div>
                         <p class="text-sm text-secondary mb-2">Mô hình tiết kiệm chi phí nhất trong dòng Gemini 2.0, với hiệu suất cao hơn 1.5 Flash và tốc độ tương đương. Tối ưu cho các tác vụ yêu cầu xử lý khối lượng lớn.</p>
                         <div class="flex items-center gap-3 text-xs">
-                            <span class="text-secondary font-semibold">200 RPD (Requests Per Day)</span>
-                            <span class="text-secondary">• 1M tokens đầu vào • 65K tokens đầu ra</span>
+                            <span class="text-secondary font-semibold">200 RPD</span>
+                            <span class="text-secondary">• 1M TPM</span>
                         </div>
                     </div>
                     <div class="model-check hidden">
@@ -465,8 +468,8 @@
                         </div>
                         <p class="text-sm text-secondary mb-2">Mô hình mạnh mẽ nhất của Google, nổi bật trong việc xử lý video/audio dài, mã hóa phức tạp và suy luận với ngữ cảnh lớn. Chỉ dùng cho tasks cực khó.</p>
                         <div class="flex items-center gap-3 text-xs">
-                            <span class="text-red-500 font-semibold">⚠ CHỈ 50 RPD (Requests Per Day)</span>
-                            <span class="text-secondary">• 2M tokens đầu vào • 65K tokens đầu ra</span>
+                            <span class="text-red-500 font-semibold">⚠ CHỈ 50 RPD</span>
+                            <span class="text-secondary">• 125K TPM</span>
                         </div>
                     </div>
                     <div class="model-check hidden">
