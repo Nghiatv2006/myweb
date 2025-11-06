@@ -403,6 +403,24 @@ function processMarkdown(text) {
     return marked.parse(text);
 }
 
+function renderMath(container) {
+    try {
+        if (typeof renderMathInElement === 'function') {
+            renderMathInElement(container, {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false },
+                    { left: "\\(", right: "\\)", display: false },
+                    { left: "\\[", right: "\\]", display: true }
+                ],
+                throwOnError: false
+            });
+        }
+    } catch (e) {
+        // ignore
+    }
+}
+
 function addCopyButtons(container) {
     container.querySelectorAll('pre').forEach((pre) => {
         const codeBlock = pre.querySelector('code');
@@ -472,7 +490,7 @@ function addMessage(content, isUser = false, isStreaming = false, files = []) {
             messageDiv.appendChild(header);
             messageDiv.appendChild(contentDiv);
             
-            const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
+            const container = chatMessages.querySelector('.max-w-\\[800px\\]') || chatMessages.querySelector('.max-w-3xl') || chatMessages;
             container.appendChild(messageDiv);
         }
         
@@ -483,6 +501,7 @@ function addMessage(content, isUser = false, isStreaming = false, files = []) {
         setTimeout(() => {
             contentDiv.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
             addCopyButtons(contentDiv);
+            renderMath(contentDiv);
         }, 10);
         
     } else {
@@ -532,6 +551,7 @@ function addMessage(content, isUser = false, isStreaming = false, files = []) {
             setTimeout(() => {
                 contentDiv.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
                 addCopyButtons(contentDiv);
+                renderMath(contentDiv);
             }, 10);
         }
         
@@ -588,11 +608,14 @@ function addMessage(content, isUser = false, isStreaming = false, files = []) {
             messageDiv.appendChild(editBtn);
         }
         
-        const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
+        const container = chatMessages.querySelector('.max-w-\\[800px\\]') || chatMessages.querySelector('.max-w-3xl') || chatMessages;
         container.appendChild(messageDiv);
     }
     
-    scrollToBottom();
+    // Stop auto-scrolling during responses; only scroll when user sends
+    if (isUser && !isStreaming) {
+        scrollToBottom();
+    }
 }
 
 function finalizeStreamingMessage() {
@@ -636,7 +659,7 @@ function finalizeStreamingMessage() {
 async function regenerateResponse(messageElement) {
     // Find the index of this message in the DOM
     const chatMessages = document.getElementById('chatMessages');
-    const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
+    const container = chatMessages.querySelector('.max-w-\\[800px\\]') || chatMessages.querySelector('.max-w-3xl') || chatMessages;
     const allMessages = Array.from(container.querySelectorAll('.message'));
     const messageIndex = allMessages.indexOf(messageElement);
     
@@ -801,19 +824,36 @@ function editMessage(messageElement, originalContent, originalFiles) {
         editBtn.onclick = () => editMessage(messageElement, newContent, originalFiles);
         messageElement.appendChild(editBtn);
         
-        const messageIndex = conversationHistory.findIndex((msg, idx) => 
-            msg.isUser && msg.content === originalContent
-        );
-        if (messageIndex !== -1) {
-            conversationHistory.splice(messageIndex + 1);
-            conversationHistory[messageIndex].content = newContent;
-        }
-        
+        // Find message index in DOM
         const chatMessages = document.getElementById('chatMessages');
-        const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
+        const container = chatMessages.querySelector('.max-w-\\[800px\\]') || chatMessages.querySelector('.max-w-3xl') || chatMessages;
         const allMessages = Array.from(container.querySelectorAll('.message'));
         const currentIndex = allMessages.indexOf(messageElement);
+        
         if (currentIndex !== -1) {
+            // Count user messages up to this index
+            let userMessageCount = 0;
+            for (let i = 0; i <= currentIndex; i++) {
+                if (allMessages[i].classList.contains('user-message')) {
+                    userMessageCount++;
+                }
+            }
+            
+            // Find the corresponding user message in conversationHistory
+            const userMessages = conversationHistory.filter(msg => msg.isUser);
+            if (userMessageCount > 0 && userMessageCount <= userMessages.length) {
+                const targetUserMessage = userMessages[userMessageCount - 1];
+                const messageIndex = conversationHistory.findIndex(msg => msg === targetUserMessage);
+                
+                if (messageIndex !== -1) {
+                    // Remove all messages after this user message
+                    conversationHistory.splice(messageIndex + 1);
+                    // Update the user message content
+                    conversationHistory[messageIndex].content = newContent;
+                }
+            }
+            
+            // Remove all DOM messages after this one
             for (let i = currentIndex + 1; i < allMessages.length; i++) {
                 allMessages[i].remove();
             }
@@ -932,7 +972,7 @@ function addTypingIndicator() {
         </div>
     `;
     
-    const container = chatMessages.querySelector('.max-w-3xl') || chatMessages;
+    const container = chatMessages.querySelector('.max-w-\\[800px\\]') || chatMessages.querySelector('.max-w-3xl') || chatMessages;
     container.appendChild(typingDiv);
     scrollToBottom();
 }
@@ -944,7 +984,7 @@ function removeTypingIndicator() {
 
 function clearChatDisplay() {
     const chatMessages = document.getElementById('chatMessages');
-    const container = chatMessages.querySelector('.max-w-3xl');
+    const container = chatMessages.querySelector('.max-w-\\[800px\\]') || chatMessages.querySelector('.max-w-3xl');
     if (container) {
         container.innerHTML = `
             <div class="text-center py-12">
@@ -1252,13 +1292,23 @@ function deleteConversation(id) {
 }
 
 function newChat() {
+    // Save current conversation before resetting
+    if (conversationHistory.length > 0) {
+        saveCurrentConversation();
+    }
+    
+    // Reset state and ensure we are not streaming
+    removeTypingIndicator();
+    const previousId = currentConversationId;
     conversationHistory = [];
     currentConversationId = generateId();
-    updateRequestCountDisplay(); // Update display when starting new chat
     attachedFiles = [];
     
-    // Clear summary cache for new conversation
-    localStorage.removeItem(`summary_${currentConversationId}`);
+    // Clear summary cache for previous conversation
+    localStorage.removeItem(`summary_${previousId}`);
+    
+    // Update request count display
+    updateRequestCountDisplay();
     
     const filePreviewArea = document.getElementById('filePreviewArea');
     filePreviewArea.innerHTML = '';
@@ -1278,6 +1328,8 @@ function newChat() {
     
     const messageInput = document.getElementById('messageInput');
     messageInput.focus();
+    
+    showToast('✅ Đã tạo cuộc trò chuyện mới', 'success', 2000);
 }
 
 // ============================================
