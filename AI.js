@@ -984,7 +984,11 @@ function removeTypingIndicator() {
 
 function clearChatDisplay() {
     const chatMessages = document.getElementById('chatMessages');
-    const container = chatMessages.querySelector('.max-w-\\[800px\\]') || chatMessages.querySelector('.max-w-3xl');
+    // ✅ SỬA: Xóa toàn bộ nội dung chatMessages thay vì chỉ xóa container con
+    chatMessages.innerHTML = '';
+    const container = document.createElement('div');
+    container.className = 'max-w-3xl mx-auto';
+    chatMessages.appendChild(container);
     if (container) {
         container.innerHTML = `
             <div class="text-center py-12">
@@ -1376,21 +1380,34 @@ async function handleSendMessage() {
     isWaitingForResponse = true;
     sendBtn.disabled = true;
     
+    // ⏱️ BẮT ĐẦU ĐẾM
+    const startTime = performance.now();
     addTypingIndicator();
     
     try {
-        const response = await sendToGeminiStreaming(message || 'Mô tả file này', files);
-        incrementRequestCount(); // Increment request count after successful API call
-        removeTypingIndicator();
+        const response = await sendToGeminiStreaming(message, files);
         
+        // ⏱️ TÍNH THỜI GIAN + ĐỔI TYPING INDICATOR
+        const thinkTime = ((performance.now() - startTime) / 1000).toFixed(1);
+        const typingDiv = document.getElementById('typingIndicator');
+        if (typingDiv?.querySelector('.typing-indicator')) {
+            typingDiv.querySelector('.typing-indicator').outerHTML = `<div style="font-size: 0.75rem; color: #888; opacity: 0.7;">💭 Đã suy nghĩ ${thinkTime}s</div>`;
+        }
+        
+        incrementRequestCount();
+        
+        // AI STREAMING (CODE GỐC - KHÔNG SỬA)
         let fullResponse = '';
-        
         for await (const chunk of streamResponse(response)) {
             fullResponse += chunk;
             addMessage(fullResponse, false, true);
         }
         
         finalizeStreamingMessage();
+        
+        // ⏱️ XÓA TYPING INDICATOR SAU STREAM XONG
+        document.getElementById('typingIndicator')?.remove();
+        
         conversationHistory.push({ content: fullResponse, isUser: false });
         saveCurrentConversation();
         showToast('✅ Tin nhắn đã được gửi thành công', 'success', 2000);
