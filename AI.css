@@ -4,6 +4,7 @@
     box-sizing: border-box;
 }
 
+
 :root {
     --bg-primary: #212121;
     --bg-secondary: #2f2f2f;
@@ -18,12 +19,14 @@
     --button-hover: #0d8f6d;
 }
 
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     overflow: hidden;
     background-color: var(--bg-primary);
     color: var(--text-primary);
 }
+
 
 .bg-primary { background-color: var(--bg-primary); }
 .bg-user-msg { background-color: var(--message-user-bg); }
@@ -32,12 +35,14 @@ body {
 .text-secondary { color: var(--text-secondary); }
 .border-subtle { border-color: var(--border-color); }
 
+
 .chat-container {
     height: 100vh;
     display: flex;
     transition: all 0.3s ease;
     position: relative;
 }
+
 
 .sidebar {
     position: fixed;
@@ -54,14 +59,17 @@ body {
     flex-direction: column;
 }
 
+
 .sidebar.closed {
     transform: translateX(-100%);
 }
+
 
 .sidebar-header {
     background-color: var(--bg-sidebar);
     flex-shrink: 0;
 }
+
 
 .sidebar-content {
     flex: 1;
@@ -69,14 +77,17 @@ body {
     min-height: 0;
 }
 
+
 .bg-sidebar {
     background-color: var(--bg-sidebar);
 }
+
 
 .sidebar button svg,
 .sidebar button path {
     pointer-events: none !important;
 }
+
 
 .main-content {
     flex: 1;
@@ -87,11 +98,13 @@ body {
     min-height: 0;
 }
 
+
 .message {
     animation: slideIn 0.3s ease;
     max-width: 100%;
     overflow-x: hidden;
 }
+
 
 @keyframes slideIn {
     from {
@@ -104,9 +117,11 @@ body {
     }
 }
 
+
 .typing-indicator {
     display: inline-block;
 }
+
 
 .typing-indicator span {
     display: inline-block;
@@ -118,13 +133,16 @@ body {
     animation: bounce 1.4s infinite;
 }
 
+
 .typing-indicator span:nth-child(2) {
     animation-delay: 0.2s;
 }
 
+
 .typing-indicator span:nth-child(3) {
     animation-delay: 0.4s;
 }
+
 
 @keyframes bounce {
     0%, 60%, 100% {
@@ -135,11 +153,13 @@ body {
     }
 }
 
+
 .code-block {
     position: relative;
     margin: 1em 0;
     max-width: 100%;
 }
+
 
 .copy-btn {
     position: absolute;
@@ -155,9 +175,11 @@ body {
     color: #fff;
 }
 
+
 .copy-btn:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
 
 pre {
     margin: 0;
@@ -174,27 +196,33 @@ pre {
     scrollbar-color: var(--border-color) transparent;
 }
 
+
 pre::-webkit-scrollbar {
     height: 6px;
 }
 
+
 pre::-webkit-scrollbar-track {
     background: transparent;
 }
+
 
 pre::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 3px;
 }
 
+
 pre::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
 }
+
 
 code {
     font-family: 'Monaco', 'Courier New', monospace;
     font-size: 13px;
 }
+
 
 .chat-messages {
     background-color: var(--bg-primary);
@@ -202,17 +230,21 @@ code {
     min-height: 0;
 }
 
+
 .message.user-message {
     background-color: var(--message-user-bg);
 }
+
 
 .message.ai-message {
     background-color: var(--message-ai-bg);
 }
 
+
 .history-item:hover {
     background-color: var(--hover-bg);
 }
+
 
 .prose {
     line-height: 1.7;
@@ -220,35 +252,43 @@ code {
     overflow-x: hidden;
 }
 
+
 .prose p {
     margin: 0.8em 0;
 }
+
 
 .prose h1, .prose h2, .prose h3, .prose h4 {
     font-weight: 600;
     margin: 1em 0 0.5em;
 }
 
+
 .prose h1 { font-size: 1.5em; }
 .prose h2 { font-size: 1.3em; }
 .prose h3 { font-size: 1.1em; }
+
 
 .prose ul, .prose ol {
     margin: 0.8em 0;
     padding-left: 1.5em;
 }
 
+
 .prose li {
     margin: 0.3em 0;
 }
+
 
 .prose strong {
     font-weight: 600;
 }
 
+
 .prose em {
     font-style: italic;
 }
+
 
 .prose code:not(pre code) {
     background-color: rgba(135, 131, 120, 0.15);
@@ -259,10 +299,12 @@ code {
     white-space: nowrap;
 }
 
+
 .prose pre {
     max-width: 100%;
     overflow-x: auto;
 }
+
 
 .prose pre code {
     background-color: transparent;
@@ -271,6 +313,7 @@ code {
     white-space: pre;
 }
 
+
 .prose blockquote {
     border-left: 3px solid var(--border-color);
     padding-left: 1em;
@@ -278,21 +321,25 @@ code {
     color: var(--text-secondary);
 }
 
+
 .prose table {
     border-collapse: collapse;
     width: 100%;
     margin: 1em 0;
 }
 
+
 .prose th, .prose td {
     border: 1px solid var(--border-color);
     padding: 0.5em;
 }
 
+
 .prose th {
     background-color: var(--message-user-bg);
     font-weight: 600;
 }
+
 
 .file-preview-item {
     position: relative;
@@ -302,6 +349,7 @@ code {
     background-color: var(--message-user-bg);
     border: 1px solid var(--border-color);
 }
+
 
 .file-preview-remove {
     position: absolute;
@@ -320,12 +368,14 @@ code {
     font-size: 12px;
 }
 
+
 .user-message-images {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 12px;
 }
+
 
 .user-message-images img {
     max-width: 200px;
@@ -337,13 +387,16 @@ code {
     transition: transform 0.2s;
 }
 
+
 .user-message-images img:hover {
     transform: scale(1.05);
 }
 
+
 #apiKeyModal {
     z-index: 200 !important;
 }
+
 
 #sidebarOverlay {
     display: none;
@@ -353,13 +406,16 @@ code {
     z-index: 90;
 }
 
+
 #sidebarOverlay.active {
     display: block;
 }
 
+
 .scroll-smooth {
     scroll-behavior: smooth;
 }
+
 
 /* Input area taller + buttons match height */
 .message-input {
@@ -369,6 +425,7 @@ code {
     line-height: 1.5;
 }
 
+
 .input-button {
     height: 52px;
     width: 52px;
@@ -377,9 +434,11 @@ code {
     justify-content: center;
 }
 
+
 .input-area {
     flex-shrink: 0;
 }
+
 
 /* Mobile fixes */
 @media (max-width: 768px) {
@@ -400,12 +459,12 @@ code {
         background-color: var(--bg-primary) !important;
         padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
         border-top: 1px solid var(--border-color) !important;
-        z-index: 45 !important; /* Đủ cao để trên chat messages, nhưng thấp hơn modal */
+        z-index: 45 !important;
     }
     
     /* Settings modal fix for mobile */
     .settings-modal {
-        z-index: 60 !important; /* Cao hơn input area để che khi mở */
+        z-index: 60 !important;
     }
     
     .settings-modal-content {
@@ -426,29 +485,49 @@ code {
     }
 }
 
+
+/* Desktop: Giới hạn width để đẹp hơn */
+@media (min-width: 769px) {
+    .message {
+        max-width: 1000px ;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .prose {
+        max-width: none;
+    }
+}
+
+
 /* Model selector styling */
 .model-option {
     border-color: var(--border-color);
 }
+
 
 .model-option.selected {
     border-color: var(--button-bg) !important;
     background-color: rgba(16, 163, 127, 0.1) !important;
 }
 
+
 .model-option.selected .model-check {
     display: block !important;
 }
+
 
 .model-option:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+
 /* Toast notification animations */
 #toastNotification {
     animation: slideInRight 0.3s ease-out;
 }
+
 
 @keyframes slideInRight {
     from {
@@ -461,9 +540,11 @@ code {
     }
 }
 
+
 #toastNotification.hiding {
     animation: slideOutRight 0.3s ease-in forwards;
 }
+
 
 @keyframes slideOutRight {
     from {
@@ -476,6 +557,7 @@ code {
     }
 }
 
+
 @media (max-width: 768px) {
     #toastNotification {
         top: 80px;
@@ -484,16 +566,19 @@ code {
     }
 }
 
+
 /* Ensure line breaks display properly */
 .prose br {
     display: block;
     margin: 0.25em 0;
 }
 
+
 .user-message .prose {
     white-space: pre-wrap;
     word-wrap: break-word;
 }
+
 
 /* Conversation menu styles */
 .conv-menu {
@@ -510,9 +595,11 @@ code {
     padding: 4px 0;
 }
 
+
 .conv-menu.hidden {
     display: none;
 }
+
 
 .conv-menu-item {
     width: 100%;
@@ -528,9 +615,11 @@ code {
     transition: background-color 0.2s;
 }
 
+
 .conv-menu-item:hover {
     background-color: var(--bg-user-msg);
 }
+
 
 .conv-menu-item svg {
     width: 16px;
