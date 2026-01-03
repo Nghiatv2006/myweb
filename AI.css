@@ -626,3 +626,272 @@ code {
     height: 16px;
     flex-shrink: 0;
 }
+
+/* Streaming optimization */
+#streamingContent {
+    will-change: contents;
+    contain: layout style;
+}
+
+.prose pre code {
+    contain: layout paint;
+}
+
+/* Code block khi chưa highlight vẫn đẹp */
+#streamingContent {
+    will-change: contents;
+    contain: layout style paint; /* Thêm paint */
+}
+
+/* ✅ THÊM VÀO AI.css */
+pre.streaming-placeholder {
+    min-height: 100px;
+    background: linear-gradient(
+        90deg,
+        var(--bg-secondary) 25%,
+        var(--hover-bg) 50%,
+        var(--bg-secondary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+
+#streamingMessage pre {
+    contain: layout paint;
+    /* Bỏ height lock động, dùng min-height thay thế */
+    min-height: 80px;
+    transition: min-height 0.2s ease;
+}
+
+/* Text không trong code → không trigger layout */
+#streamingMessage p,
+#streamingMessage li {
+    contain: content;
+}
+
+/* Blinking cursor cho code đang stream */
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+
+/* ============================================
+   MULTI API KEYS MANAGER STYLES
+   ============================================ */
+
+.saved-key-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.saved-key-btn.active {
+    background-color: var(--button-bg);
+    color: white;
+    border-color: var(--button-bg);
+}
+
+.saved-key-btn:not(.active) {
+    background-color: var(--message-user-bg);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.saved-key-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+.saved-key-btn .delete-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.25);
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 4px;
+    transition: all 0.2s;
+}
+
+.saved-key-btn .delete-x:hover {
+    background: #ff4444;
+    transform: scale(1.15);
+}
+
+.add-key-btn {
+    padding: 8px 14px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.add-key-btn:hover {
+    border-color: var(--button-bg);
+    color: var(--button-bg);
+    background: rgba(16, 163, 127, 0.05);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Key actions container */
+.key-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+}
+
+/* Edit button */
+.edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.2);
+    font-size: 11px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.edit-btn:hover {
+    background: var(--button-bg);
+    transform: scale(1.15);
+}
+
+/* Delete button vẫn giữ nguyên */
+.delete-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.25);
+    font-size: 11px;
+    font-weight: bold;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.delete-x:hover {
+    background: #ff4444;
+    transform: scale(1.15);
+}
+
+/* ============================================
+   VOICE INPUT & TTS
+   ============================================ */
+
+/* Voice Recording Pulse Animation */
+.recording-pulse {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse-animation 1.5s infinite;
+}
+
+@keyframes pulse-animation {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 0.7;
+    }
+}
+
+/* Voice Input Button Active State */
+#voiceInputBtn.recording {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    animation: pulse-btn 1s infinite;
+}
+
+@keyframes pulse-btn {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+}
+
+/* TTS Button Playing State */
+.tts-playing {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+}
+
+/* Voice Language Selector */
+.voice-lang-selector {
+    position: absolute;
+    bottom: 60px;
+    right: 10px;
+    background: var(--ai-msg-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+.voice-lang-selector button {
+    padding: 6px 12px;
+    margin: 2px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.voice-lang-selector button.active {
+    background: var(--button-bg);
+    color: white;
+}
+
+/* Input buttons - 3 nút đều 52px vuông */
+.input-button {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 16px !important;  /* Tròn hơn */
+}
+
+/* Textarea match height */
+.message-input {
+    min-height: 52px !important;
+    height: 52px !important;
+}
