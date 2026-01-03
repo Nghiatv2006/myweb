@@ -1,506 +1,718 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Agent - Powered by Gemini</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    <link rel="stylesheet" href="AI.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AI Chat Agent - Powered by Gemini</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+        <script defer
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+        <script defer
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/streaming-markdown@0.4.0/dist/smd.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/incremental-dom@0.7.0/dist/incremental-dom-min.js"></script>
 
-<body>
-    <!-- API Key Setup Modal -->
-    <div id="apiKeyModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-        <div class="rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl bg-primary">
-            <div class="text-center mb-6">
-                <div class="inline-block p-4 rounded-full mb-4 bg-accent">
-                    <svg width="32" height="32" fill="none" stroke="white" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                    </svg>
+        <link rel="stylesheet" href="AI.css">
+    </head>
+
+    <body>
+        <!-- API Key Setup Modal -->
+        <div id="apiKeyModal"
+            class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div
+                class="rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl bg-primary">
+                <div class="text-center mb-6">
+                    <div class="inline-block p-4 rounded-full mb-4 bg-accent">
+                        <svg width="32" height="32" fill="none" stroke="white"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2 text-primary">Cài đặt API
+                        Key</h2>
+                    <p class="text-sm text-secondary">Nhập Gemini API key của
+                        bạn để bắt đầu</p>
                 </div>
-                <h2 class="text-2xl font-bold mb-2 text-primary">Cài đặt API Key</h2>
-                <p class="text-sm text-secondary">Nhập Gemini API key của bạn để bắt đầu</p>
-            </div>
-            
-            <div class="mb-4">
-                <input 
-                    type="password" 
-                    id="apiKeyInput" 
-                    placeholder="Nhập API key của bạn..."
-                    class="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle"
-                />
-            </div>
-            
-            <button 
-                id="saveApiKeyBtn"
-                class="w-full py-3 rounded-xl font-medium transition-all mb-3 bg-accent text-white hover:opacity-90"
-            >
-                Lưu và Bắt đầu
-            </button>
-            
-            <a 
-                href="https://aistudio.google.com/api-keys" 
-                target="_blank"
-                class="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-medium transition-all bg-user-msg text-primary hover:bg-opacity-80"
-            >
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                </svg>
-                Lấy API Key miễn phí
-            </a>
-            
-            <p class="text-xs text-secondary mt-3 text-center">
-                ⚠️ API key chỉ lưu trên trình duyệt của bạn.<br>
-                Không chia sẻ với người khác!
-            </p>
-        </div>
-    </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 settings-modal">
-        <div class="rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl bg-primary max-h-[90vh] overflow-y-auto settings-modal-content">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-primary">⚙️ Cài Đặt</h2>
-                <button id="closeSettingsBtn" class="p-2 rounded-lg hover:bg-user-msg transition">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
+                <div class="mb-4">
+                    <input
+                        type="password"
+                        id="apiKeyInput"
+                        placeholder="Nhập API key của bạn..."
+                        class="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle" />
+                </div>
+
+                <button
+                    id="saveApiKeyBtn"
+                    class="w-full py-3 rounded-xl font-medium transition-all mb-3 bg-accent text-white hover:opacity-90">
+                    Lưu và Bắt đầu
                 </button>
-            </div>
-            
-            <div class="space-y-6">
-                <!-- System Prompt Section -->
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
-                        <span>🎭</span>
-                        <span>System Prompt</span>
-                    </h3>
-                    <p class="text-xs text-secondary mb-3">Tùy chỉnh tính cách AI (ví dụ: roleplay waifu, trợ lý chuyên nghiệp...)</p>
-                    
-                    <textarea 
-                        id="systemPromptInput" 
-                        rows="6"
-                        placeholder="Ví dụ: Bạn là một cô gái dễ thương, hài hước, hay dùng emoji 💕..."
-                        class="w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle text-sm mb-3"
-                    ></textarea>
-                    
-                    <p class="text-xs text-secondary mb-3">💡 Để trống = AI mặc định</p>
-                    
-                    <button 
-                        id="saveSystemPromptBtn"
-                        class="px-4 py-2 rounded-xl font-medium transition-all bg-accent text-white hover:opacity-90"
-                    >
-                        Lưu System Prompt
-                    </button>
-                </div>
-                
-                <div class="border-t border-subtle"></div>
-                
-                <!-- API Key Section -->
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
-                        <span>🔑</span>
-                        <span>API Key Settings</span>
-                    </h3>
-                    <p class="text-xs text-secondary mb-3">Quản lý Gemini API key của bạn</p>
-                    
-                    <div class="flex gap-2">
-                        <input 
-                            type="password" 
-                            id="apiKeyInputSettings"
-                            placeholder="Nhập API key của bạn..."
-                            class="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle"
-                        />
-                        <button 
-                            id="saveApiKeyBtnSettings"
-                            class="px-4 py-2 rounded-xl font-medium transition-all bg-accent text-white hover:opacity-90 whitespace-nowrap"
-                        >
-                            Lưu
-                        </button>
-                    </div>
-                    
-                    <a 
-                        href="https://aistudio.google.com/api-keys" 
-                        target="_blank"
-                        class="inline-flex items-center gap-2 mt-3 text-sm text-accent hover:underline"
-                    >
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                        Lấy API Key miễn phí
-                    </a>
-                </div>
-                
-                <div class="border-t border-subtle"></div>
-                
-                <!-- Import Chat Section -->
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
-                        <span>📥</span>
-                        <span>Import Chat</span>
-                    </h3>
-                    <p class="text-xs text-secondary mb-3">Nhập cuộc trò chuyện từ file JSON đã export</p>
-                    
-                    <input 
-                        type="file" 
-                        id="importChatInput" 
-                        accept=".json,application/json"
-                        class="hidden"
-                    />
-                    
-                    <button 
-                        id="importChatBtn"
-                        class="px-4 py-2 rounded-xl font-medium transition-all bg-accent text-white hover:opacity-90"
-                    >
-                        Chọn file JSON để import
-                    </button>
-                </div>
-                
-                <div class="border-t border-subtle"></div>
-                
-                <!-- Danger Zone -->
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
-                        <span>⚠️</span>
-                        <span>Vùng Nguy Hiểm</span>
-                    </h3>
-                    <p class="text-xs text-secondary mb-3">Các hành động này không thể hoàn tác</p>
-                    
-                    <button 
-                        id="clearAllBtn"
-                        class="px-4 py-2 rounded-xl font-medium transition-all bg-red-600 text-white hover:bg-red-700"
-                    >
-                        🗑️ Xóa tất cả lịch sử
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="chat-container">
-        <!-- Sidebar Overlay -->
-        <div id="sidebarOverlay"></div>
-
-        <!-- Sidebar -->
-        <div class="sidebar closed" id="sidebar">
-            <!-- Sticky Header -->
-            <div class="sidebar-header sticky top-0 bg-sidebar z-10 border-b border-subtle">
-                <div class="flex items-center justify-between p-4">
-                    <h2 class="font-semibold text-primary">Menu</h2>
-                    <div class="flex items-center gap-2">
-                        <button id="settingsBtn"
-                            class="p-2 rounded-lg hover:bg-user-msg transition"
-                            title="Cài đặt">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </button>
-                        <button id="closeSidebarBtn"
-                            class="p-2 rounded-lg hover:bg-user-msg transition"
-                            title="Đóng">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Scrollable Content -->
-            <div class="sidebar-content flex-1 overflow-y-auto">
-                <div class="p-4">
-                    <button id="newChatBtn"
-                        class="w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 mb-4 bg-accent text-white hover:opacity-90">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Cuộc trò chuyện mới
-                    </button>
-                    
-                    <div class="mb-4">
-                        <h3 class="text-xs font-semibold mb-2 px-2 text-secondary">LỊCH SỬ</h3>
-                        <div id="conversationHistory" class="space-y-1"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Header -->
-            <header class="border-b px-2 sm:px-4 py-2 border-subtle">
-                <div class="flex items-center justify-between relative">
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <button id="toggleSidebar" class="p-2 rounded-lg hover:bg-user-msg transition">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                            </svg>
-                        </button>
-                        <a href="main" class="px-2 py-1 rounded-lg text-xs transition-all bg-user-msg text-primary hover:bg-opacity-80 whitespace-nowrap">Giới thiệu</a>
-                    </div>
-                    
-                    <h1 class="absolute left-1/2 -translate-x-1/2 text-sm sm:text-base font-semibold text-primary">AI Chat Agent</h1>
-                    
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="px-2 py-1 text-xs rounded-lg bg-user-msg text-secondary flex items-center gap-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                            <span id="requestCountDisplay" class="font-semibold text-primary">0</span>
-                            <span class="hidden sm:inline">requests</span>
-                        </div>
-                        <button id="modelSelectorBtn" class="px-2 py-1 text-xs rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1">
-                            <span id="currentModelIcon">⚡</span>
-                            <span id="currentModelName" class="hidden sm:inline">Flash Lite 2.5</span>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-                    </div>
-                    
-                </div>
-            </header>
-
-            <!-- Chat Messages -->
-            <div id="chatMessages" class="chat-messages flex-1 overflow-y-auto scroll-smooth px-4 py-6">
-                <div class="mx-auto"> 
-                    <div class="text-center py-12">
-                        <div class="inline-block p-4 rounded-full mb-4 bg-user-msg">
-                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                            </svg>
-                        </div>
-                        <h2 class="text-2xl font-bold mb-2 text-primary">Xin chào! Tôi có thể giúp gì cho bạn?</h2>
-                        <p class="text-secondary">Powered by Gemini AI</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Scroll to Bottom -->
-            <button id="scrollToBottomBtn" class="hidden fixed bottom-24 right-8 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 z-40 bg-accent text-white">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
-                </svg>
-            </button>
-
-            <!-- Input Area -->
-            <div class="border-t px-4 py-3 border-subtle input-area">
-                <div class="max-w-3xl mx-auto">
-                    <div id="filePreviewArea" class="hidden mb-2 flex flex-wrap gap-2"></div>
-                    
-                    <div id="dropOverlay" class="hidden fixed inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed z-40 flex items-center justify-center">
-                        <div class="text-center">
-                            <svg class="mx-auto mb-4" width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                            </svg>
-                            <p class="text-2xl font-bold">Thả file vào đây</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-2 items-end">
-                        <input type="file" id="fileInput" accept="*/*" multiple class="hidden">
-                        <button id="attachFileBtn" class="input-button p-3 rounded-xl transition-all duration-200 bg-user-msg text-primary hover:bg-opacity-80 flex-shrink-0">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
-                            </svg>
-                        </button>
-                        <div class="flex-1 relative">
-                            <textarea 
-                                id="messageInput" 
-                                rows="1"
-                                placeholder="Nhập tin nhắn của bạn..."
-                                class="w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle message-input"
-                            ></textarea>
-                        </div>
-                        <button 
-                            id="sendBtn"
-                            class="input-button p-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-accent text-white hover:opacity-90 flex-shrink-0"
-                        >
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <p class="text-xs text-center mt-2 text-secondary">
-                        Enter để gửi • Shift+Enter để xuống dòng
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rate Limit Modal -->
-    <div id="rateLimitModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="rounded-xl p-6 max-w-md mx-4 shadow-2xl bg-primary">
-            <div class="text-center">
-                <div class="inline-block p-3 rounded-full mb-4" style="background-color: #fee; color: #c33;">
-                    <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                <a
+                    href="https://aistudio.google.com/api-keys"
+                    target="_blank"
+                    class="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-medium transition-all bg-user-msg text-primary hover:bg-opacity-80">
+                    <svg width="20" height="20" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                </div>
-                <h3 class="text-xl font-bold mb-2 text-primary">Đã đạt giới hạn API</h3>
-                <p class="mb-4 text-secondary">
-                    Bạn đã vượt quá giới hạn sử dụng API. Vui lòng thử lại sau hoặc kiểm tra API key của bạn.
+                    Lấy API Key miễn phí
+                </a>
+
+                <p class="text-xs text-secondary mt-3 text-center">
+                    ⚠️ API key chỉ lưu trên trình duyệt của bạn.<br>
+                    Không chia sẻ với người khác!
                 </p>
-                <button id="closeModalBtn" class="px-6 py-2 rounded-lg font-medium bg-accent text-white hover:opacity-90">
-                    Đã hiểu
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal"
+            class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 settings-modal">
+            <div
+                class="rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl bg-primary max-h-[90vh] overflow-y-auto settings-modal-content">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-primary">⚙️ Cài Đặt</h2>
+                    <button id="closeSettingsBtn"
+                        class="p-2 rounded-lg hover:bg-user-msg transition">
+                        <svg width="20" height="20" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- System Prompt Section -->
+                    <div>
+                        <h3
+                            class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
+                            <span>🎭</span>
+                            <span>System Prompt</span>
+                        </h3>
+                        <p class="text-xs text-secondary mb-3">Tùy chỉnh tính
+                            cách AI (ví dụ: roleplay waifu, trợ lý chuyên
+                            nghiệp...)</p>
+
+                        <textarea
+                            id="systemPromptInput"
+                            rows="6"
+                            placeholder="Ví dụ: Bạn là một cô gái dễ thương, hài hước, hay dùng emoji 💕..."
+                            class="w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle text-sm mb-3"></textarea>
+
+                        <p class="text-xs text-secondary mb-3">💡 Để trống = AI
+                            mặc định</p>
+
+                        <button
+                            id="saveSystemPromptBtn"
+                            class="px-4 py-2 rounded-xl font-medium transition-all bg-accent text-white hover:opacity-90">
+                            Lưu System Prompt
+                        </button>
+                    </div>
+
+                    <div class="border-t border-subtle"></div>
+
+                    <!-- API Key Section -->
+                    <div>
+                        <h3
+                            class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
+                            <span>🔑</span>
+                            <span>API Key Settings</span>
+                        </h3>
+                        <p class="text-xs text-secondary mb-3">Quản lý Gemini
+                            API key của bạn</p>
+
+                        <div class="flex gap-2">
+                            <input
+                                type="password"
+                                id="apiKeyInputSettings"
+                                placeholder="Nhập API key của bạn..."
+                                class="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle" />
+                            <button
+                                id="saveApiKeyBtnSettings"
+                                class="px-4 py-2 rounded-xl font-medium transition-all bg-accent text-white hover:opacity-90 whitespace-nowrap">
+                                Lưu
+                            </button>
+                        </div>
+
+                        <a
+                            href="https://aistudio.google.com/api-keys"
+                            target="_blank"
+                            class="inline-flex items-center gap-2 mt-3 text-sm text-accent hover:underline">
+                            <svg width="16" height="16" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                    stroke-linejoin="round" stroke-width="2"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Lấy API Key miễn phí
+                        </a>
+
+                        <!-- Saved API Keys Section -->
+                        <div class="mt-6">
+                            <div
+                                class="text-sm font-semibold mb-3 text-primary">💾
+                                API Keys đã lưu:</div>
+                            <div id="savedKeysButtons"
+                                class="flex flex-wrap gap-2">
+                                <!-- Buttons render here -->
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="border-t border-subtle"></div>
+
+                    <!-- Import Chat Section -->
+                    <div>
+                        <h3
+                            class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
+                            <span>📥</span>
+                            <span>Import Chat</span>
+                        </h3>
+                        <p class="text-xs text-secondary mb-3">Nhập cuộc trò
+                            chuyện từ file JSON đã export</p>
+
+                        <input
+                            type="file"
+                            id="importChatInput"
+                            accept=".json,application/json"
+                            class="hidden" />
+
+                        <button
+                            id="importChatBtn"
+                            class="px-4 py-2 rounded-xl font-medium transition-all bg-accent text-white hover:opacity-90">
+                            Chọn file JSON để import
+                        </button>
+                    </div>
+
+                    <div class="border-t border-subtle"></div>
+
+                    <!-- Danger Zone -->
+                    <div>
+                        <h3
+                            class="text-lg font-semibold mb-3 text-primary flex items-center gap-2">
+                            <span>⚠️</span>
+                            <span>Vùng Nguy Hiểm</span>
+                        </h3>
+                        <p class="text-xs text-secondary mb-3">Các hành động này
+                            không thể hoàn tác</p>
+
+                        <button
+                            id="clearAllBtn"
+                            class="px-4 py-2 rounded-xl font-medium transition-all bg-red-600 text-white hover:bg-red-700">
+                            🗑️ Xóa tất cả lịch sử
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <!-- Sidebar Overlay -->
+            <div id="sidebarOverlay"></div>
+
+            <!-- Sidebar -->
+            <div class="sidebar closed" id="sidebar">
+                <!-- Sticky Header -->
+                <div
+                    class="sidebar-header sticky top-0 bg-sidebar z-10 border-b border-subtle">
+                    <div class="flex items-center justify-between p-4">
+                        <h2 class="font-semibold text-primary">Menu</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="settingsBtn"
+                                class="p-2 rounded-lg hover:bg-user-msg transition"
+                                title="Cài đặt">
+                                <svg width="20" height="20" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </button>
+                            <button id="closeSidebarBtn"
+                                class="p-2 rounded-lg hover:bg-user-msg transition"
+                                title="Đóng">
+                                <svg width="20" height="20" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable Content -->
+                <div class="sidebar-content flex-1 overflow-y-auto">
+                    <div class="p-4">
+                        <button id="newChatBtn"
+                            class="w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 mb-4 bg-accent text-white hover:opacity-90">
+                            <svg width="20" height="20" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                    stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                            Cuộc trò chuyện mới
+                        </button>
+
+                        <div class="mb-4">
+                            <h3
+                                class="text-xs font-semibold mb-2 px-2 text-secondary">LỊCH
+                                SỬ</h3>
+                            <div id="conversationHistory"
+                                class="space-y-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Header -->
+                <header class="border-b px-2 sm:px-4 py-2 border-subtle">
+                    <div class="flex items-center justify-between relative">
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button id="toggleSidebar"
+                                class="p-2 rounded-lg hover:bg-user-msg transition">
+                                <svg width="20" height="20" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                            <a href="main"
+                                class="px-2 py-1 rounded-lg text-xs transition-all bg-user-msg text-primary hover:bg-opacity-80 whitespace-nowrap">Giới
+                                thiệu</a>
+                        </div>
+
+                        <h1
+                            class="absolute left-1/2 -translate-x-1/2 text-sm sm:text-base font-semibold text-primary">AI
+                            Chat Agent</h1>
+
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <div
+                                class="px-2 py-1 text-xs rounded-lg bg-user-msg text-secondary flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span id="requestCountDisplay"
+                                    class="font-semibold text-primary">0</span>
+                                <span class="hidden sm:inline">requests</span>
+                            </div>
+                            <button id="modelSelectorBtn"
+                                class="px-2 py-1 text-xs rounded-lg transition-all bg-user-msg text-primary hover:bg-opacity-80 flex items-center gap-1">
+                                <span id="currentModelIcon">⚡</span>
+                                <span id="currentModelName"
+                                    class="hidden sm:inline">Flash Lite
+                                    2.5</span>
+                                <svg class="w-3 h-3" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            
+
+                        </div>
+
+                    </div>
+                </header>
+
+                <!-- Chat Messages -->
+                <div id="chatMessages"
+                    class="chat-messages flex-1 overflow-y-auto scroll-smooth px-4 py-6">
+                    <div class="mx-auto">
+                        <div class="text-center py-12">
+                            <div
+                                class="inline-block p-4 rounded-full mb-4 bg-user-msg">
+                                <svg width="32" height="32" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold mb-2 text-primary">Xin
+                                chào! Tôi có thể giúp gì cho bạn?</h2>
+                            <p class="text-secondary">Powered by Gemini AI</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scroll to Bottom -->
+                <button id="scrollToBottomBtn"
+                    class="hidden fixed bottom-24 right-8 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 z-40 bg-accent text-white">
+                    <svg width="24" height="24" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
                 </button>
-            </div>
-        </div>
-    </div>
 
-    <!-- Model Selector Modal -->
-<div id="modelSelectorModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-    <div class="rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl bg-primary max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold text-primary">🤖 Chọn AI Model</h2>
-            <button id="closeModelSelectorBtn" class="p-2 rounded-lg hover:bg-user-msg transition">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-        
-        <div class="mb-4 px-2">
-            <p class="text-xs text-secondary mb-2">
-                <strong class="text-primary">RPD (Requests Per Day)</strong> là số lượng yêu cầu bạn có thể thực hiện mỗi ngày với mô hình tương ứng. Giới hạn này được Google đặt ra dựa trên API key miễn phí.
-            </p>
-            <p class="text-xs text-secondary mb-2">
-                <strong class="text-primary">TPM (Tokens Per Minute)</strong> là giới hạn tốc độ xử lý token mỗi phút. Giới hạn này áp dụng cho tổng số token được xử lý trong tất cả các request trong 1 phút.
-            </p>
-        </div>
-        
-        <div class="space-y-3">
-            <!-- Gemini 2.5 Flash Lite -->
-            <div class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent" data-model="gemini-2.5-flash-lite">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-2xl">⚡</span>
-                            <h3 class="font-bold text-primary">Gemini 2.5 Flash Lite</h3>
-                            <span class="px-2 py-0.5 text-xs rounded-full bg-accent text-white">Mặc định</span>
-                        </div>
-                        <p class="text-sm text-secondary mb-2">Nhanh nhất trong dòng Gemini 2.5, tối ưu cho hiệu quả chi phí và thông lượng cao. Phù hợp cho dịch thuật, phân loại và các tác vụ yêu cầu xử lý khối lượng lớn với độ trễ thấp.</p>
-                        <div class="flex items-center gap-3 text-xs">
-                            <span class="text-accent font-semibold">✓ 1.000 RPD</span>
-                            <span class="text-secondary">• 250K TPM</span>
-                        </div>
-                    </div>
-                    <div class="model-check hidden">
-                        <svg class="w-6 h-6 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
+                <!-- Input Area -->
+                <div class="border-t px-4 py-3 border-subtle input-area">
+                    <div class="max-w-3xl mx-auto">
+                        <div id="filePreviewArea"
+                            class="hidden mb-2 flex flex-wrap gap-2"></div>
 
-            <!-- Gemini 2.5 Flash -->
-            <div class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent" data-model="gemini-2.5-flash">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-2xl">💨</span>
-                            <h3 class="font-bold text-primary">Gemini 2.5 Flash</h3>
+                        <div id="dropOverlay"
+                            class="hidden fixed inset-0 bg-blue-500 bg-opacity-20 border-4 border-blue-500 border-dashed z-40 flex items-center justify-center">
+                            <div class="text-center">
+                                <svg class="mx-auto mb-4" width="64" height="64"
+                                    fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p class="text-2xl font-bold">Thả file vào
+                                    đây</p>
+                            </div>
                         </div>
-                        <p class="text-sm text-secondary mb-2">Mô hình mạnh mẽ, phù hợp cho các tác vụ yêu cầu xử lý nhanh với khối lượng lớn. Tốt cho chat hàng ngày, học tập, code đơn giản đến trung bình.</p>
-                        <div class="flex items-center gap-3 text-xs">
-                            <span class="text-secondary font-semibold">250 RPD</span>
-                            <span class="text-secondary">• 250K TPM</span>
-                        </div>
-                    </div>
-                    <div class="model-check hidden">
-                        <svg class="w-6 h-6 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Gemini 2.0 Flash Exp -->
-            <div class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent" data-model="gemini-2.0-flash-exp">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-2xl">🚀</span>
-                            <h3 class="font-bold text-primary">Gemini 2.0 Flash Exp</h3>
-                            <span class="px-2 py-0.5 text-xs rounded-full border border-accent text-accent">Thử nghiệm</span>
-                        </div>
-                        <p class="text-sm text-secondary mb-2">Phiên bản thử nghiệm của Gemini 2.0 Flash, kết hợp tốc độ với khả năng suy luận qua các vấn đề phức tạp. Phù hợp cho coding nâng cao và research.</p>
-                        <div class="flex items-center gap-3 text-xs">
-                            <span class="text-yellow-500 font-semibold">⚠ 50 RPD</span>
-                            <span class="text-secondary">• 250K TPM</span>
-                        </div>
-                    </div>
-                    <div class="model-check hidden">
-                        <svg class="w-6 h-6 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
+                        <div class="flex gap-2 items-end">
+                            <input type="file" id="fileInput" accept="*/*"
+                                multiple class="hidden">
+                                <!-- Attach File -->
+                            <button id="attachFileBtn"
+                               class="input-button p-3 rounded-xl transition-all bg-user-msg text-primary hover:bg-opacity-80 flex-shrink-0">
+                                <svg width="24" height="24" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                            </button>
 
-            <!-- Gemini 2.0 Flash Lite -->
-            <div class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent" data-model="gemini-2.0-flash-lite">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-2xl">⚡</span>
-                            <h3 class="font-bold text-primary">Gemini 2.0 Flash Lite</h3>
-                        </div>
-                        <p class="text-sm text-secondary mb-2">Mô hình tiết kiệm chi phí nhất trong dòng Gemini 2.0, với hiệu suất cao hơn 1.5 Flash và tốc độ tương đương. Tối ưu cho các tác vụ yêu cầu xử lý khối lượng lớn.</p>
-                        <div class="flex items-center gap-3 text-xs">
-                            <span class="text-secondary font-semibold">200 RPD</span>
-                            <span class="text-secondary">• 1M TPM</span>
-                        </div>
-                    </div>
-                    <div class="model-check hidden">
-                        <svg class="w-6 h-6 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
+                            <!-- Voice Input Button -->
+<button id="voiceInputBtn" 
+        class="input-button p-3 rounded-xl transition-all bg-user-msg text-primary hover:bg-opacity-80 flex-shrink-0">
+    <svg id="micIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+    </svg>
+</button>
 
-            <!-- Gemini 2.5 Pro -->
-            <div class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent" data-model="gemini-2.5-pro">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-2xl">💎</span>
-                            <h3 class="font-bold text-primary">Gemini 2.5 Pro</h3>
-                        </div>
-                        <p class="text-sm text-secondary mb-2">Mô hình mạnh mẽ nhất của Google, nổi bật trong việc xử lý video/audio dài, mã hóa phức tạp và suy luận với ngữ cảnh lớn. Chỉ dùng cho tasks cực khó.</p>
-                        <div class="flex items-center gap-3 text-xs">
-                            <span class="text-red-500 font-semibold">⚠ CHỈ 50 RPD</span>
-                            <span class="text-secondary">• 125K TPM</span>
-                        </div>
-                    </div>
-                    <div class="model-check hidden">
-                        <svg class="w-6 h-6 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- Voice Recording Indicator -->
+<div id="voiceRecordingIndicator" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3">
+    <div class="recording-pulse"></div>
+    <span class="font-semibold">🎙️ Đang ghi âm...</span>
+    <button onclick="stopVoiceInput()" class="ml-2 px-3 py-1 bg-white text-red-500 rounded-full text-sm font-bold hover:bg-gray-100">
+        Dừng
+    </button>
 </div>
 
-    <!-- Toast Notification -->
-    <div id="toastNotification" class="hidden fixed top-20 right-4 z-50 transition-all duration-300">
-        <div class="bg-accent text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 min-w-[250px]">
-            <span class="toast-icon text-xl font-bold">ℹ</span>
-            <span id="toastMessage">AI đang xử lý...</span>
-        </div>
-    </div>
 
-    <script src="AI.js"></script>
-</body>
+                            <div class="flex-1 relative">
+                                <textarea
+                                    id="messageInput"
+                                    rows="1"
+                                    placeholder="Nhập tin nhắn của bạn..."
+                                    class="w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 transition-all bg-user-msg text-primary border-subtle message-input"></textarea>
+                            </div>
+                            <button
+                                id="sendBtn"
+                                class="input-button p-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-accent text-white hover:opacity-90 flex-shrink-0">
+                                <svg width="24" height="24" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round" stroke-width="2"
+                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-xs text-center mt-2 text-secondary">
+                            Enter để gửi • Shift+Enter để xuống dòng
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rate Limit Modal -->
+        <div id="rateLimitModal"
+            class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="rounded-xl p-6 max-w-md mx-4 shadow-2xl bg-primary">
+                <div class="text-center">
+                    <div class="inline-block p-3 rounded-full mb-4"
+                        style="background-color: #fee; color: #c33;">
+                        <svg width="32" height="32" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-primary">Đã đạt giới
+                        hạn API</h3>
+                    <p class="mb-4 text-secondary">
+                        Bạn đã vượt quá giới hạn sử dụng API. Vui lòng thử lại
+                        sau hoặc kiểm tra API key của bạn.
+                    </p>
+                    <button id="closeModalBtn"
+                        class="px-6 py-2 rounded-lg font-medium bg-accent text-white hover:opacity-90">
+                        Đã hiểu
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Selector Modal -->
+
+
+
+        <div id="modelSelectorModal"
+            class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <div
+                class="rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl bg-primary max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-primary">🤖 Chọn AI
+                        Model</h2>
+                    <button id="closeModelSelectorBtn"
+                        class="p-2 rounded-lg hover:bg-user-msg transition">
+                        <svg width="20" height="20" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-4 px-2">
+                    <p class="text-xs text-secondary mb-2">
+                        <strong class="text-primary">RPD (Requests Per
+                            Day)</strong> là số lượng yêu cầu bạn có thể thực
+                        hiện mỗi ngày với mô hình tương ứng. Giới hạn này được
+                        Google đặt ra dựa trên API key miễn phí.
+                    </p>
+                    <p class="text-xs text-secondary mb-2">
+                        <strong class="text-primary">TPM (Tokens Per
+                            Minute)</strong> là giới hạn tốc độ xử lý token mỗi
+                        phút. Giới hạn này áp dụng cho tổng số token được xử lý
+                        trong tất cả các request trong 1 phút.
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Gemini 2.5 Flash Lite -->
+                    <div
+                        class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent"
+                        data-model="gemini-2.5-flash-lite">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">⚡</span>
+                                    <h3 class="font-bold text-primary">Gemini
+                                        2.5 Flash Lite</h3>
+                                    <span
+                                        class="px-2 py-0.5 text-xs rounded-full bg-accent text-white">Mặc
+                                        định</span>
+                                </div>
+                                <p class="text-sm text-secondary mb-2">Nhanh
+                                    nhất trong dòng Gemini 2.5, tối ưu cho hiệu
+                                    quả chi phí và thông lượng cao. Phù hợp cho
+                                    dịch thuật, phân loại và các tác vụ yêu cầu
+                                    xử lý khối lượng lớn với độ trễ thấp.</p>
+                                <div class="flex items-center gap-3 text-xs">
+                                    <span class="text-accent font-semibold">✓
+                                        1.000 RPD</span>
+                                    <span class="text-secondary">• 250K
+                                        TPM</span>
+                                </div>
+                            </div>
+                            <div class="model-check hidden">
+                                <svg class="w-6 h-6 text-accent"
+                                    fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gemini 2.5 Flash -->
+                    <div
+                        class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent"
+                        data-model="gemini-2.5-flash">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">💨</span>
+                                    <h3 class="font-bold text-primary">Gemini
+                                        2.5 Flash</h3>
+                                </div>
+                                <p class="text-sm text-secondary mb-2">Mô hình
+                                    mạnh mẽ, phù hợp cho các tác vụ yêu cầu xử
+                                    lý nhanh với khối lượng lớn. Tốt cho chat
+                                    hàng ngày, học tập, code đơn giản đến trung
+                                    bình.</p>
+                                <div class="flex items-center gap-3 text-xs">
+                                    <span
+                                        class="text-secondary font-semibold">250
+                                        RPD</span>
+                                    <span class="text-secondary">• 250K
+                                        TPM</span>
+                                </div>
+                            </div>
+                            <div class="model-check hidden">
+                                <svg class="w-6 h-6 text-accent"
+                                    fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gemini 2.0 Flash Exp -->
+                    <div
+                        class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent"
+                        data-model="gemini-2.0-flash-exp">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">🚀</span>
+                                    <h3 class="font-bold text-primary">Gemini
+                                        2.0 Flash Exp</h3>
+                                    <span
+                                        class="px-2 py-0.5 text-xs rounded-full border border-accent text-accent">Thử
+                                        nghiệm</span>
+                                </div>
+                                <p class="text-sm text-secondary mb-2">Phiên bản
+                                    thử nghiệm của Gemini 2.0 Flash, kết hợp tốc
+                                    độ với khả năng suy luận qua các vấn đề phức
+                                    tạp. Phù hợp cho coding nâng cao và
+                                    research.</p>
+                                <div class="flex items-center gap-3 text-xs">
+                                    <span
+                                        class="text-yellow-500 font-semibold">⚠
+                                        50 RPD</span>
+                                    <span class="text-secondary">• 250K
+                                        TPM</span>
+                                </div>
+                            </div>
+                            <div class="model-check hidden">
+                                <svg class="w-6 h-6 text-accent"
+                                    fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gemini 2.0 Flash Lite -->
+                    <div
+                        class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent"
+                        data-model="gemini-2.0-flash-lite">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">⚡</span>
+                                    <h3 class="font-bold text-primary">Gemini
+                                        2.0 Flash Lite</h3>
+                                </div>
+                                <p class="text-sm text-secondary mb-2">Mô hình
+                                    tiết kiệm chi phí nhất trong dòng Gemini
+                                    2.0, với hiệu suất cao hơn 1.5 Flash và tốc
+                                    độ tương đương. Tối ưu cho các tác vụ yêu
+                                    cầu xử lý khối lượng lớn.</p>
+                                <div class="flex items-center gap-3 text-xs">
+                                    <span
+                                        class="text-secondary font-semibold">200
+                                        RPD</span>
+                                    <span class="text-secondary">• 1M TPM</span>
+                                </div>
+                            </div>
+                            <div class="model-check hidden">
+                                <svg class="w-6 h-6 text-accent"
+                                    fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gemini 2.5 Pro -->
+                    <div
+                        class="model-option p-4 rounded-xl cursor-pointer transition-all border-2 bg-user-msg hover:border-accent"
+                        data-model="gemini-2.5-pro">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-2xl">💎</span>
+                                    <h3 class="font-bold text-primary">Gemini
+                                        2.5 Pro</h3>
+                                </div>
+                                <p class="text-sm text-secondary mb-2">Mô hình
+                                    mạnh mẽ nhất của Google, nổi bật trong việc
+                                    xử lý video/audio dài, mã hóa phức tạp và
+                                    suy luận với ngữ cảnh lớn. Chỉ dùng cho
+                                    tasks cực khó.</p>
+                                <div class="flex items-center gap-3 text-xs">
+                                    <span class="text-red-500 font-semibold">⚠
+                                        CHỈ 50 RPD</span>
+                                    <span class="text-secondary">• 125K
+                                        TPM</span>
+                                </div>
+                            </div>
+                            <div class="model-check hidden">
+                                <svg class="w-6 h-6 text-accent"
+                                    fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toastNotification"
+            class="hidden fixed top-20 right-4 z-50 transition-all duration-300">
+            <div
+                class="bg-accent text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 min-w-[250px]">
+                <span class="toast-icon text-xl font-bold">ℹ</span>
+                <span id="toastMessage">AI đang xử lý...</span>
+            </div>
+        </div>
+
+        <script src="AI.js"></script>
+    </body>
 </html>
