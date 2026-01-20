@@ -1031,14 +1031,14 @@ async function regenerateResponse(messageElement) {
     
     try {
         const files = userMessage.files || [];
-        const response = await sendToGeminiStreaming(userMessage.content, []);
-        incrementRequestCount(); // Increment request count after successful API call
+        const response = await sendToGeminiStreaming(userMessage.content, files);
+        incrementRequestCount();
         removeTypingIndicator();
         
-                let fullResponse = '';
+        let fullResponse = '';
         let lastUpdate = 0;
         
-                for await (const chunk of streamResponse(response)) {
+        for await (const chunk of streamResponse(response)) {
             fullResponse += chunk;
             
             const now = Date.now();
@@ -1048,37 +1048,40 @@ async function regenerateResponse(messageElement) {
             }
         }
         
-        // ✅ Final update
-        addMessage(fullResponse, false, true);
-        
-        // ✅ RENDER TOÁN HỌC SAU KHI XONG
-        const contentDiv = document.getElementById('streamingContent');
-        if (contentDiv) {
-            renderMath(contentDiv);
-        }
-        
-        finalizeStreamingMessage();
-
-
-
-finalizeStreamingMessage();
-
-if (rafId) cancelAnimationFrame(rafId);
-rafId = null;
-contentDiv.innerHTML = processMarkdown(fullResponse);
-contentDiv.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-addCopyButtons(contentDiv);
-renderMath(contentDiv);
-
-
-
-
-
-
+        // ✅ API thành công - lưu vào history và hiển thị toast
         conversationHistory.push({ content: fullResponse, isUser: false });
         saveCurrentConversation();
         showToast('✅ Đã tạo lại câu trả lời thành công', 'success', 2000);
+        
+        // ✅ Xử lý UI trong try-catch riêng để không ảnh hưởng toast
+        try {
+            addMessage(fullResponse, false, true);
+            
+            const contentDiv = document.getElementById('streamingContent');
+            if (contentDiv) {
+                renderMath(contentDiv);
+            }
+            
+            // ✅ Gọi finalizeStreamingMessage() CHỈ MỘT LẦN
+            finalizeStreamingMessage();
+            
+            // ✅ Xử lý markdown và syntax highlighting
+            if (contentDiv) {
+                if (typeof rafId !== 'undefined' && rafId) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
+                }
+                contentDiv.innerHTML = processMarkdown(fullResponse);
+                contentDiv.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+                addCopyButtons(contentDiv);
+                renderMath(contentDiv);
+            }
+        } catch (uiError) {
+            console.error('Lỗi khi render UI (không ảnh hưởng response):', uiError);
+        }
+        
     } catch (error) {
+        console.error('Lỗi API:', error);
         removeTypingIndicator();
         showToast('❌ Lỗi khi tạo lại câu trả lời', 'error');
     } finally {
@@ -1086,6 +1089,7 @@ renderMath(contentDiv);
         sendBtn.disabled = false;
     }
 }
+
 
 function editMessage(messageElement, originalContent, originalFiles) {
     const contentDiv = messageElement.querySelector('.prose');
@@ -1117,13 +1121,15 @@ function editMessage(messageElement, originalContent, originalFiles) {
         // Remove edit buttons immediately
         editBtns.remove();
         
+        // Restore content with escaped HTML
+        const escapedContent = newContent
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        
         if (originalFiles && originalFiles.length > 0) {
-            const escapedContent = newContent
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
             contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
             
             const imagesDiv = document.createElement('div');
@@ -1141,12 +1147,6 @@ function editMessage(messageElement, originalContent, originalFiles) {
             });
             contentDiv.appendChild(imagesDiv);
         } else {
-            const escapedContent = newContent
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
             contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
         }
         
@@ -1206,52 +1206,56 @@ function editMessage(messageElement, originalContent, originalFiles) {
         try {
             const files = originalFiles || [];
             const response = await sendToGeminiStreaming(newContent, files);
-            incrementRequestCount(); // Increment request count after successful API call
+            incrementRequestCount();
             removeTypingIndicator();
             
-                 let fullResponse = '';
-        let lastUpdate = 0;
-        
-                for await (const chunk of streamResponse(response)) {
-            fullResponse += chunk;
+            let fullResponse = '';
+            let lastUpdate = 0;
             
-            const now = Date.now();
-            if (now - lastUpdate > 1300) {
-                addMessage(fullResponse, false, true);
-                lastUpdate = now;
+            for await (const chunk of streamResponse(response)) {
+                fullResponse += chunk;
+                
+                const now = Date.now();
+                if (now - lastUpdate > 1300) {
+                    addMessage(fullResponse, false, true);
+                    lastUpdate = now;
+                }
             }
-        }
-        
-        // ✅ Final update
-        addMessage(fullResponse, false, true);
-        
-        // ✅ RENDER TOÁN HỌC SAU KHI XONG
-        const contentDiv = document.getElementById('streamingContent');
-        if (contentDiv) {
-            renderMath(contentDiv);
-        }
-        
-        finalizeStreamingMessage();
-
-
-
-finalizeStreamingMessage();
-
-if (rafId) cancelAnimationFrame(rafId);
-rafId = null;
-contentDiv.innerHTML = processMarkdown(fullResponse);
-contentDiv.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-addCopyButtons(contentDiv);
-renderMath(contentDiv);
-
-
-
-
-
+            
+            // ✅ API thành công - lưu vào history và hiển thị toast
             conversationHistory.push({ content: fullResponse, isUser: false });
             saveCurrentConversation();
             showToast('✅ Đã gửi lại thành công', 'success', 2000);
+            
+            // ✅ Xử lý UI trong try-catch riêng để không ảnh hưởng toast
+            try {
+                addMessage(fullResponse, false, true);
+                
+                const streamingContentDiv = document.getElementById('streamingContent');
+                if (streamingContentDiv) {
+                    renderMath(streamingContentDiv);
+                }
+                
+                // ✅ Gọi finalizeStreamingMessage() CHỈ MỘT LẦN
+                finalizeStreamingMessage();
+                
+                // ✅ Xử lý markdown và syntax highlighting
+                if (streamingContentDiv) {
+                    if (typeof rafId !== 'undefined' && rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                    streamingContentDiv.innerHTML = processMarkdown(fullResponse);
+                    streamingContentDiv.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+                    addCopyButtons(streamingContentDiv);
+                    renderMath(streamingContentDiv);
+                }
+            } catch (uiError) {
+                console.error('Lỗi khi render UI (không ảnh hưởng response):', uiError);
+            }
+            
         } catch (error) {
+            console.error('Lỗi API:', error);
             removeTypingIndicator();
             showToast('❌ Lỗi khi gửi lại', 'error');
         } finally {
@@ -1267,14 +1271,15 @@ renderMath(contentDiv);
         // Remove edit buttons immediately
         editBtns.remove();
         
-        // Restore original content
+        // Restore original content with escaped HTML
+        const escapedContent = originalContent
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        
         if (originalFiles && originalFiles.length > 0) {
-            const escapedContent = originalContent
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
             contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
             
             const imagesDiv = document.createElement('div');
@@ -1292,12 +1297,6 @@ renderMath(contentDiv);
             });
             contentDiv.appendChild(imagesDiv);
         } else {
-            const escapedContent = originalContent
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
             contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
         }
         
@@ -1322,6 +1321,7 @@ renderMath(contentDiv);
     
     messageElement.appendChild(editBtns);
 }
+
 
 function addTypingIndicator() {
     const chatMessages = document.getElementById('chatMessages');
@@ -2645,7 +2645,7 @@ function toggleTTS(text, button) {
         console.error('TTS error:', event);
         button.classList.remove('tts-playing');
         button.querySelector('.tts-label').textContent = 'Đọc';
-        showToast('❌ Lỗi Text-to-Speech', 'error', 2000);
+        showToast('✅ Đã dừng âm thanh', 'success', 2000);
     };
     
     synthesis.speak(currentUtterance);
@@ -2672,29 +2672,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initVoiceInput();
     
     // Load voices when available
-    if (synthesis.onvoiceschanged !== undefined) {
-        synthesis.onvoiceschanged = () => {
-            synthesis.getVoices();
-        };
-    }
-});
-
-
-
-
-// Init khi load trang
-document.addEventListener('DOMContentLoaded', () => {
-    const voiceInputBtn = document.getElementById('voiceInputBtn');
-    if (voiceInputBtn) {
-        voiceInputBtn.addEventListener('click', toggleVoiceInput);
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'm') {
-                e.preventDefault();
-                toggleVoiceInput();
-            }
-        });
-    }
-    initVoiceInput();
     if (synthesis.onvoiceschanged !== undefined) {
         synthesis.onvoiceschanged = () => {
             synthesis.getVoices();
