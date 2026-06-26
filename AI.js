@@ -342,9 +342,15 @@ function saveSystemPrompt(prompt) {
 
 async function validateGeminiApiKey(apiKey) {
     // Basic format check: Gemini API keys start with "AIza" and are typically 39 characters
-    if (!apiKey || !apiKey.startsWith('AIza') || apiKey.length < 30) {
-        return false;
-    }
+   if (
+    !apiKey ||
+    (
+        !apiKey.startsWith("AIza") &&
+        !apiKey.startsWith("AQ.")
+    )
+) {
+    return false;
+}
     
     // Test with a simple API call
     try {
